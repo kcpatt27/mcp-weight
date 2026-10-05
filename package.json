@@ -1,0 +1,45 @@
+{
+  "name": "mcp-weight",
+  "version": "0.1.0",
+  "description": "Weigh your MCP stack: how many context tokens each configured MCP server's tool schemas cost, across clients and configs.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Kalen Patterson",
+  "bin": {
+    "mcp-weight": "dist/src/cli.js"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "context",
+    "tokens",
+    "cli",
+    "claude",
+    "cursor",
+    "opencode"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
+    "scan": "node dist/src/cli.js scan",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "js-tiktoken": "^1.0.21"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
