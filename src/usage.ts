@@ -1,6 +1,15 @@
 import { readFileSync } from "node:fs";
 import type { ScanReport } from "./types.js";
 
+/**
+ * Transcript dialects:
+ * - `simple` — OpenAI-style assistant messages: `message.tool_calls[]`.
+ * - `claude-code` — Anthropic-style assistant messages:
+ *   `message.content[]` blocks with `type: "tool_use"`.
+ * - `auto` (default) — extract both shapes from whatever each line contains.
+ */
+export type TranscriptFormat = "auto" | "simple" | "claude-code";
+
 export interface ToolCall {
   name: string;
   arguments: unknown;
@@ -27,6 +36,8 @@ export interface UsageReport {
   schemaVersion: 1;
   transcript: string;
   scannedAt: string;
+  /** Dialect detected in the file (or selected explicitly). */
+  format: TranscriptFormat | "mixed" | "none";
   tool: { name: string; version: string } | null;
   totalCalls: number;
   totalTools: number;
@@ -36,38 +47,87 @@ export interface UsageReport {
 
 export interface UsageOptions {
   scanReport?: ScanReport;
+  /** Transcript dialect. `auto` (default) extracts both shapes. */
+  format?: TranscriptFormat;
+}
+
+interface ExtractedCall {
+  name: string;
+  id?: string;
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 /**
- * Parse a Claude Code-style JSONL transcript and return per-tool call
- * counts, with optional schema-token weight from a scan report.
- *
- * Each line must be a JSON object with a `type` field. Lines that are
- * not objects or lack `type` produce an error entry and are skipped.
- * Tool calls are extracted from assistant messages
- * (`message.role === "assistant"` and `message.tool_calls`).
- *
- * If a `scanReport` is provided, each tool row is enriched with its
- * schema-token weight from the scan report's per-server tool lists.
- * Tools not found in the scan report get `tokens: undefined` and
- * `tokenSource: "count-only"`.
+ * Extract tool calls from one assistant message.
+ * Counts each call once; callers dedupe by `id` across the transcript.
  */
-export function parseTranscript(
-  text: string,
-  opts: UsageOptions = {}
-): UsageReport {
+function extractToolCalls(message: Record<string, unknown>, format: TranscriptFormat): ExtractedCall[] {
+  const calls: ExtractedCall[] = [];
+  const wantSimple = format === "auto" || format === "simple";
+  const wantClaude = format === "auto" || format === "claude-code";
+
+  if (wantSimple && Array.isArray(message.tool_calls)) {
+    for (const raw of message.tool_calls) {
+      if (!isRecord(raw)) continue;
+      const name = raw.name;
+      if (typeof name !== "string" || name.length === 0) continue;
+      const id = raw.id;
+      calls.push({ name, id: typeof id === "string" ? id : undefined });
+    }
+  }
+
+  if (wantClaude && Array.isArray(message.content)) {
+    for (const raw of message.content) {
+      if (!isRecord(raw) || raw.type !== "tool_use") continue;
+      const name = raw.name;
+      if (typeof name !== "string" || name.length === 0) continue;
+      const id = raw.id;
+      calls.push({ name, id: typeof id === "string" ? id : undefined });
+    }
+  }
+
+  return calls;
+}
+
+function hasClaudeToolUse(message: Record<string, unknown>): boolean {
+  if (!Array.isArray(message.content)) return false;
+  return message.content.some((block) => isRecord(block) && block.type === "tool_use");
+}
+
+/**
+ * Parse a JSONL session transcript and return per-tool call counts, with
+ * optional schema-token weight from a scan report.
+ *
+ * Each non-blank line must be a JSON object with a `type` field. Lines that are
+ * not objects, invalid JSON, or missing `type` produce an error entry and are
+ * skipped; every other unrecognized shape is skipped silently. Tool calls come
+ * from assistant messages, in either supported dialect (see `TranscriptFormat`).
+ *
+ * Calls carrying an `id` are counted once (transcripts may repeat a call across
+ * streamed updates). If a `scanReport` is provided, each tool row is enriched
+ * with its schema-token weight; tools not found get `tokenSource: "count-only"`.
+ */
+export function parseTranscript(text: string, opts: UsageOptions = {}): UsageReport {
+  const format = opts.format ?? "auto";
   const lines = text.split("\n");
   const errors: string[] = [];
   const callCounts = new Map<string, number>();
+  const seenIds = new Set<string>();
   let totalCalls = 0;
+  let sawSimple = false;
+  let sawClaude = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] as string;
     if (line.trim().length === 0) continue;
+
     let entry: TranscriptEntry;
     try {
-      const parsed = JSON.parse(line);
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      const parsed: unknown = JSON.parse(line);
+      if (!isRecord(parsed)) {
         errors.push(`line ${i + 1}: not a JSON object`);
         continue;
       }
@@ -83,18 +143,22 @@ export function parseTranscript(
     }
 
     const msg = entry.message;
-    if (!msg || typeof msg !== "object" || Array.isArray(msg)) continue;
-
+    if (!isRecord(msg)) continue;
     if (msg.role !== "assistant") continue;
 
-    const toolCalls = msg.tool_calls;
-    if (!Array.isArray(toolCalls)) continue;
+    if ((format === "auto" || format === "simple") && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
+      sawSimple = true;
+    }
+    if ((format === "auto" || format === "claude-code") && hasClaudeToolUse(msg)) {
+      sawClaude = true;
+    }
 
-    for (const tc of toolCalls) {
-      if (!tc || typeof tc !== "object") continue;
-      const name = tc.name;
-      if (typeof name !== "string" || name.length === 0) continue;
-      callCounts.set(name, (callCounts.get(name) ?? 0) + 1);
+    for (const call of extractToolCalls(msg, format)) {
+      if (call.id) {
+        if (seenIds.has(call.id)) continue;
+        seenIds.add(call.id);
+      }
+      callCounts.set(call.name, (callCounts.get(call.name) ?? 0) + 1);
       totalCalls++;
     }
   }
@@ -124,10 +188,14 @@ export function parseTranscript(
       };
     });
 
+  const detected: UsageReport["format"] =
+    sawSimple && sawClaude ? "mixed" : sawClaude ? "claude-code" : sawSimple ? "simple" : "none";
+
   return {
     schemaVersion: 1,
     transcript: "",
     scannedAt: new Date().toISOString(),
+    format: detected,
     tool: opts.scanReport ? opts.scanReport.tool : null,
     totalCalls,
     totalTools: callCounts.size,
@@ -139,10 +207,7 @@ export function parseTranscript(
 /**
  * Read a transcript file from disk and parse it.
  */
-export function readTranscriptFile(
-  filePath: string,
-  opts: UsageOptions = {}
-): UsageReport {
+export function readTranscriptFile(filePath: string, opts: UsageOptions = {}): UsageReport {
   const text = readFileSync(filePath, "utf8");
   const report = parseTranscript(text, opts);
   report.transcript = filePath;

@@ -1,0 +1,30 @@
+name: release
+
+# Publishes mcp-weight to npm via Trusted Publishing (OIDC) on a v* tag.
+# One-time setup (operator): npmjs.com -> mcp-weight -> Settings ->
+#   Trusted Publisher -> GitHub Actions: repo kcpatt27/mcp-weight,
+#   workflow release.yml, allow the "npm publish" action.
+# See docs/RELEASING.md. No NPM_TOKEN or OTP is involved.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false # never cache in release builds
+      - run: npm ci
+      - run: npm test
+      - run: npm publish --provenance --access public

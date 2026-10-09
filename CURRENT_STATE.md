@@ -18,29 +18,36 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - Project configs are discovered from `cwd` up to the git root (nearest first).
 - Remote (HTTP) probes try Streamable HTTP then legacy SSE; failures carry an
   actionable hint (auth / not-found / connection / timeout / protocol).
-- `npm test`: **36/36** (parser shapes incl. TOML, JSONC strip, redaction,
+- `npm test`: **42/42** (parser shapes incl. TOML, JSONC strip, redaction,
   tokenizer sanity, fixture stdio end-to-end + error path, diff semantics, CLI
   `scan --out` + `diff --fail-over` integration, ancestor discovery, HTTP 401
-  hint path, usage parser + CLI dispatch).
+  hint path, usage parser + CLI dispatch + both transcript dialects).
 - Snapshot + diff + CI gate: `scan --out <file>` writes a JSON report;
   `diff <before> <after> [--fail-over N] [--fail-percent P]` exits 2 when the
   gate is exceeded.
 - GitHub repository is live with a CI workflow (ubuntu + windows, Node 20/24).
-- Published to npm: **`mcp-weight@0.1.0`** (2026-10-09). The legacy
-  `@kcpatt27/memvid-mcp` package now carries its deprecation message on the
-  registry.
+- Published to npm: **`mcp-weight@0.2.0`** (2026-10-09). The legacy
+  `@kcpatt27/memvid-mcp` package carries its deprecation message on the registry.
+- Release automation: `.github/workflows/release.yml` publishes on `v*` tags via
+  npm trusted publishing (OIDC) once the trusted publisher is configured on
+  npmjs.com; see `docs/RELEASING.md`.
 
 **Stage 2 — per-use accounting (tracer bullet)**
 
-- `mcp-weight usage <transcript.jsonl>` parses a Claude Code-style JSONL transcript and reports per-tool call counts.
+- `mcp-weight usage <transcript.jsonl>` counts per-tool calls; auto-detects the `simple` (OpenAI `tool_calls`) and `claude-code` (Anthropic `tool_use`) dialects, or takes `--format`.
 - `--scan-report <path>` enriches each row with schema-token weight from a scan report JSON.
 - Unknown transcript shapes produce error entries and are skipped (never thrown).
-- `npm test` includes 11 fixture-driven transcript tests.
+- `npm test` includes 17 fixture-driven usage tests.
 - Docs: `docs/USAGE-TRANSCRIPT-FORMAT.md`; audit: `docs/AUDIT-usage.md`.
 
 **Does not work / not built yet**
 
-- Per-use accounting from Claude Code's native session logs (future Stage 2 work; current tracer bullet uses a simplified JSONL format).
+- Per-session/per-turn aggregation and cross-file dedupe.
+- `claude-code` dialect support is modeled on the documented Anthropic shape; it
+  has not been validated against a captured Claude Code log.
+- Folder rename `mcp-diet` → `mcp-weight` is deferred: the running OpenCode
+  service holds the directory. Run `Rename-Item` with OpenCode closed, then
+  update `control-plane/project-registry.yaml`.
 
 **Reproduce**
 
@@ -52,6 +59,19 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-09 — Claude Code dialect, trusted publishing, release 0.2.0
+
+- **Did:** added the `claude-code` transcript dialect (Anthropic `tool_use`
+  content blocks) with `--format auto|simple|claude-code` and call-id dedupe;
+  tests 36 → 42. Added `.github/workflows/release.yml` (npm trusted publishing
+  via OIDC) and `docs/RELEASING.md`. Published **0.2.0** and cut the GitHub
+  release. Deferred the folder rename (the OpenCode service holds `mcp-diet`).
+- **Left:** trusted-publisher config on npmjs.com (operator); per-session
+  aggregation; a real Claude Code log fixture; folder rename.
+- **Next:** enable the trusted publisher; future releases are tag pushes.
+- **Evidence:** `npm view mcp-weight version` → 0.2.0; release workflow in git;
+  `npm test` 42/42.
 
 ### 2026-10-09 — independent audit of the usage tracer bullet
 

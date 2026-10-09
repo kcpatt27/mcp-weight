@@ -97,18 +97,19 @@ neither flag, `diff` reports and exits 0.
 ## Per-use accounting
 
 ```bash
-mcp-weight usage transcript.jsonl                    # per-tool call counts
-mcp-weight usage transcript.jsonl --scan-report scan-report.json  # with schema-token weight
-mcp-weight usage transcript.jsonl --json             # machine-readable
+mcp-weight usage transcript.jsonl                            # per-tool call counts
+mcp-weight usage transcript.jsonl --format claude-code       # force a dialect
+mcp-weight usage transcript.jsonl --scan-report scan.json    # + schema-token weight
+mcp-weight usage transcript.jsonl --json                     # machine-readable
 ```
 
-The transcript is a JSONL file where each line is a JSON object
-with a `type` field. Tool calls are extracted from assistant
-messages (`message.role === "assistant"`, `message.tool_calls`).
-Malformed lines (bad JSON, non-objects, missing `type`) are skipped
-with an error entry; the command never aborts. See
-[USAGE-TRANSCRIPT-FORMAT.md](docs/USAGE-TRANSCRIPT-FORMAT.md)
-for the full format description.
+The transcript is a JSONL file where each line is a JSON object with a `type`
+field. Tool calls come from assistant messages in either dialect — OpenAI-style
+`message.tool_calls[]` or Claude Code-style `message.content[]` blocks with
+`type: "tool_use"` — auto-detected unless `--format` forces one. Calls carrying
+an `id` are counted once. Malformed lines (bad JSON, non-objects, missing
+`type`) are skipped with an error entry; the command never aborts. See
+[USAGE-TRANSCRIPT-FORMAT.md](docs/USAGE-TRANSCRIPT-FORMAT.md).
 
 ## Clients scanned
 
@@ -138,6 +139,7 @@ Auth failures, missing commands, and unreachable servers get an actionable
 5. [`DECISIONS.md`](DECISIONS.md) — ADR log.
 6. [`AGENTS.md`](AGENTS.md) — session contract for agents (also good for humans).
 7. [`CURRENT_STATE.md`](CURRENT_STATE.md) — live snapshot and session ledger.
+8. [`docs/RELEASING.md`](docs/RELEASING.md) — release process (trusted publishing / staged publish).
 
 ## Research context
 

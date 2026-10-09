@@ -1,16 +1,36 @@
 # USAGE-TRANSCRIPT-FORMAT
 
-## Transcript format
+`mcp-weight usage` reads a JSONL session transcript — one JSON object per line,
+each with a `type` field — and reports per-tool call counts.
 
-`mcp-weight usage` reads a **Claude Code-style JSONL transcript** — one
-JSON object per line, each with a `type` field.
+## Formats
 
-### Minimal shape
+Two assistant-message dialects are supported and auto-detected per line:
+
+| Dialect | Tool calls live in | Typical producer |
+| --- | --- | --- |
+| `simple` (OpenAI-style) | `message.tool_calls[]` = `{ name, arguments }` | OpenAI-compatible agents; the simplified fixture |
+| `claude-code` (Anthropic-style) | `message.content[]` blocks with `type: "tool_use"` (`name`, `id`) | Claude Code session logs |
+
+`--format auto` (default) extracts both. `--format simple` or
+`--format claude-code` restricts to one dialect. The report records which
+dialect(s) were seen: `format: "simple" | "claude-code" | "mixed" | "none"`.
+
+Calls carrying an `id` are counted once, so a call repeated across streamed
+updates is not double-counted.
+
+### Minimal shape (`simple`)
 
 ```jsonl
 {"type":"user","message":{"role":"user","content":"List the files."}}
 {"type":"assistant","message":{"role":"assistant","tool_calls":[{"name":"Bash","arguments":{"command":"ls"}}]}}
-{"type":"assistant","message":{"role":"assistant","tool_calls":[{"name":"Read","arguments":{"file":"README.md"}}]}}
+```
+
+### Minimal shape (`claude-code`)
+
+```jsonl
+{"type":"user","message":{"role":"user","content":"List the files."}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Listing."},{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"ls"}}]}}
 ```
 
 ### Fields used
@@ -18,61 +38,61 @@ JSON object per line, each with a `type` field.
 | Field | Required | Notes |
 | --- | --- | --- |
 | `type` | yes | Must be a string. Lines without it are skipped with an error. |
-| `message.role` | yes (for tool calls) | Only `"assistant"` messages are scanned for tool calls. |
-| `message.tool_calls` | no | Array of `{ name, arguments }`. Missing or non-array → no calls extracted from that line. |
-| `message.tool_calls[].name` | yes | The tool name (e.g. `Bash`, `Read`, `Glob`). Empty names are skipped. |
-| `message.tool_calls[].arguments` | no | The tool arguments; not used for counting. |
+| `message.role` | for tool calls | Only `"assistant"` messages are scanned. |
+| `message.tool_calls` | `simple` dialect | Array of `{ name, id?, arguments }`. |
+| `message.content[]` | `claude-code` dialect | Blocks; only `type: "tool_use"` counts. `text`/`tool_result` blocks are ignored. |
+| `...id` | no | Optional call id; used to dedupe repeated calls. Non-empty `name` required in both dialects. |
 
 ### Lines that are skipped
 
-Skipped **with an error recorded** in the report's `errors` array (line
-numbers are 1-based file lines, counting blank lines):
+Skipped **with an error recorded** in the report's `errors` array (line numbers
+are 1-based file lines, counting blank lines):
 
 - Lines that are not valid JSON.
 - Lines that are not JSON objects (arrays, primitives).
 - Lines where `type` is missing or not a string.
 
-Skipped **silently** (these are normal/irrelevant shapes, not errors):
+Skipped **silently** (normal/irrelevant shapes, not errors):
 
 - Blank or whitespace-only lines.
 - Lines where `message` is missing or not an object.
 - Lines whose `message.role` is not `"assistant"`.
-- Lines where `message.tool_calls` is missing or not an array.
-- Individual tool calls that are not objects, or whose `name` is missing or
-  not a non-empty string.
+- Lines with no recognizable tool calls (`tool_calls` absent/non-array and no
+  `tool_use` blocks).
+- Individual calls that are not objects, or whose `name` is missing/empty.
 
 ## Usage command
 
 ```bash
-# Basic per-tool call counts
+# Basic per-tool call counts (auto-detects the dialect)
 mcp-weight usage transcript.jsonl
+
+# Force a dialect
+mcp-weight usage transcript.jsonl --format claude-code
 
 # Enrich with schema-token weight from a scan report
 mcp-weight usage transcript.jsonl --scan-report scan-report.json
 
 # Machine-readable JSON output
 mcp-weight usage transcript.jsonl --json
-
-# Verbose (shows token source column and notes)
-mcp-weight usage transcript.jsonl --verbose
 ```
 
 ### `--scan-report`
 
-Path to a `mcp-weight scan --json` output file. When provided, each
-tool row is enriched with its schema-token weight from the scan report's
-per-server tool lists. Tools not found in the scan report omit the `tokens`
-field and carry `tokenSource: "count-only"`.
+Path to a `mcp-weight scan --json` output file. When provided, each tool row is
+enriched with its schema-token weight from the scan report's per-server tool
+lists. Tools not found in the scan report omit the `tokens` field and carry
+`tokenSource: "count-only"`.
 
 ### Output (pretty)
 
-Captured with the shipped fixture and a scan report whose server exposes
-`Bash: 120`, `Read: 85`, `Glob: 60` tokens:
+Captured with the shipped `simple` fixture and a scan report whose server
+exposes `Bash: 120`, `Read: 85`, `Glob: 60` tokens:
 
 ```
 mcp-weight 0.2.0 — usage report
 Transcript: transcript.jsonl
-Scanned: 2026-10-09T00:00:00.000Z · 6 call(s) across 3 tool(s)
+Format: simple · Scanned: 2026-10-09T00:00:00.000Z · 6 call(s) across 3 tool(s)
 
 TOOL  CALLS  TOKENS  SOURCE
 ----  -----  ------  -----------
@@ -82,10 +102,8 @@ Glob      1      60  scan-report
 ```
 
 `TOKENS` is the tool's schema weight from the scan report, not multiplied by
-`CALLS`.
-
-When `--scan-report` is not provided, `TOKENS` shows `-` and
-`SOURCE` is `count-only`.
+`CALLS`. When `--scan-report` is not provided, `TOKENS` shows `-` and `SOURCE`
+is `count-only`.
 
 ### Output (JSON)
 
@@ -94,13 +112,12 @@ When `--scan-report` is not provided, `TOKENS` shows `-` and
   "schemaVersion": 1,
   "transcript": "transcript.jsonl",
   "scannedAt": "2026-10-09T00:00:00.000Z",
+  "format": "simple",
   "tool": { "name": "mcp-weight", "version": "0.0.0" },
   "totalCalls": 6,
   "totalTools": 3,
   "rows": [
-    { "tool": "Bash", "calls": 4, "tokens": 120, "tokenSource": "scan-report" },
-    { "tool": "Read", "calls": 1, "tokens": 85, "tokenSource": "scan-report" },
-    { "tool": "Glob", "calls": 1, "tokens": 60, "tokenSource": "scan-report" }
+    { "tool": "Bash", "calls": 4, "tokens": 120, "tokenSource": "scan-report" }
   ],
   "errors": []
 }
@@ -108,24 +125,23 @@ When `--scan-report` is not provided, `TOKENS` shows `-` and
 
 ## Error handling
 
-- Unknown transcript shapes (non-objects, missing `type`, invalid JSON)
-  are recorded in the `errors` array and reported at the bottom of the
-  pretty output. The command does not abort — it processes what it can.
-- The `--scan-report` file is validated the same way as `diff` validates
-  its inputs (schemaVersion 1 check). If it fails validation, the command
-  exits 1 with a clear error message.
-- Missing transcript file: Node's `readFileSync` throws a clear error;
-  the CLI catches it and exits 1.
+- Malformed lines (bad JSON, non-objects, missing `type`) are recorded in the
+  `errors` array and reported at the bottom of the pretty output. The command
+  never aborts — it processes what it can.
+- The `--scan-report` file is validated the same way as `diff` validates its
+  inputs (schemaVersion 1 check); failure exits 1 with a clear message.
+- A missing transcript file exits 1 via the top-level catch.
 
 ## Limitations
 
-- This is a **tracer bullet** (Stage 2 research). It reads a single
-  JSONL file and counts tool calls. It does not:
-  - Parse Claude Code's native session logs (which use a different
-    internal format).
-  - Deduplicate tool calls across sessions.
-  - Compute per-session or per-turn costs.
-  - Handle multi-turn tool results (only assistant→tool_calls are counted).
-- The transcript format is a **simplified JSONL shape** designed for
-  fixture testing and future client-specific parsers. It is not Claude
-  Code's actual internal log format.
+This is a **tracer bullet** (Stage 2 research): it reads a single JSONL file and
+counts tool calls. Specifically:
+
+- `claude-code` support targets the documented Anthropic message shape
+  (`message.content[]` with `tool_use` blocks). It has **not** been validated
+  against a captured Claude Code log on this machine (no Claude Code install);
+  add a real-log fixture when one is available.
+- It does not dedupe calls across multiple files/sessions, compute
+  per-session/per-turn costs, or interpret `tool_result` blocks.
+- The tool name in a call is matched to a scan report by name only; duplicate
+  tool names across servers resolve to the first server's weight.

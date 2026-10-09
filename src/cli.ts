@@ -8,7 +8,7 @@ import { formatReport } from "./report.js";
 import { scanSpecs } from "./scan.js";
 import { readTranscriptFile, parseTranscript } from "./usage.js";
 import type { ScanReport } from "./types.js";
-import type { UsageReport } from "./usage.js";
+import type { UsageReport, TranscriptFormat } from "./usage.js";
 
 interface Args {
   command: string;
@@ -21,6 +21,7 @@ interface Args {
   failOver?: number;
   failPercent?: number;
   scanReport?: string;
+  format?: TranscriptFormat;
   help: boolean;
   version: boolean;
 }
@@ -97,6 +98,13 @@ function parseArgs(argv: string[]): { args: Args; positionals: string[] } {
         args.scanReport = v;
         break;
       }
+      case "--format": {
+        const v = argv[++i];
+        if (v !== "auto" && v !== "simple" && v !== "claude-code")
+          throw new Error("--format must be auto, simple, or claude-code");
+        args.format = v;
+        break;
+      }
       case "--help":
       case "-h":
         args.help = true;
@@ -166,7 +174,7 @@ function formatUsageReport(report: UsageReport, verbose: boolean, version: strin
   const lines: string[] = [];
   lines.push(`mcp-weight ${version} — usage report`);
   lines.push(`Transcript: ${report.transcript}`);
-  lines.push(`Scanned: ${report.scannedAt} · ${report.totalCalls} call(s) across ${report.totalTools} tool(s)`);
+  lines.push(`Format: ${report.format} · Scanned: ${report.scannedAt} · ${report.totalCalls} call(s) across ${report.totalTools} tool(s)`);
   lines.push("");
 
   if (report.rows.length === 0) {
@@ -241,7 +249,7 @@ function formatUsageReport(report: UsageReport, verbose: boolean, version: strin
 function runUsage(args: Args, positionals: string[]): number {
   const transcriptFile = positionals[0];
   if (!transcriptFile) {
-    console.error("usage: mcp-weight usage <transcript.jsonl> [--scan-report <scan.json>] [--json] [--verbose]");
+    console.error("usage: mcp-weight usage <transcript.jsonl> [--scan-report <scan.json>] [--format auto|simple|claude-code] [--json] [--verbose]");
     return 2;
   }
 
@@ -255,7 +263,7 @@ function runUsage(args: Args, positionals: string[]): number {
     }
   }
 
-  const report = readTranscriptFile(transcriptFile, { scanReport });
+  const report = readTranscriptFile(transcriptFile, { scanReport, format: args.format });
 
   if (args.json) console.log(JSON.stringify(report, null, 2));
   else console.log(formatUsageReport(report, args.verbose, readPackage().version));
@@ -304,6 +312,7 @@ Scan options:
 
 Usage options:
   --scan-report <path>   Enrich per-tool counts with schema-token weight from a scan report
+  --format <mode>        Transcript dialect: auto (default), simple, claude-code
   --json                 Machine-readable output
   --verbose, -v          Show token source column and notes
 

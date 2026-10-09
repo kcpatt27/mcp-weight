@@ -177,3 +177,55 @@ Both normalize to the same `ServerSpec`.
 
 - One new runtime dependency (pinned in `package.json`).
 - `--config <file>.toml` works for any TOML-shaped config, not just Codex.
+
+---
+
+## ADR-0008: `usage` supports two transcript dialects and dedupes by call id
+
+- **Status:** accepted (2026-10-09)
+- **Related:** `src/usage.ts`, `src/cli.ts`, `docs/USAGE-TRANSCRIPT-FORMAT.md`, `ROADMAP.md` Stage 2
+
+### Context
+
+Stage 2's per-use accounting needs to read real agent session logs. Producers
+differ: OpenAI-compatible agents put calls in `message.tool_calls[]`; Anthropic
+messages (Claude Code logs) put them in `message.content[]` blocks with
+`type: "tool_use"`.
+
+### Decision
+
+Support both shapes with `--format auto|simple|claude-code` (default `auto`),
+detect and report the dialect(s) present (`format`), and count each call with an
+`id` once so streamed repeats are not double-counted. No new dependency.
+
+### Consequences
+
+- One `usage` command reads either log shape without a flag.
+- `claude-code` support targets the documented Anthropic shape; it is not yet
+  validated against a captured Claude Code log (noted in the format doc).
+
+---
+
+## ADR-0009: releases use npm trusted publishing (OIDC); staged publish is the fallback
+
+- **Status:** accepted (2026-10-09)
+- **Related:** `.github/workflows/release.yml`, `docs/RELEASING.md`, `ROADMAP.md`
+
+### Context
+
+Manual publishing with a device-bound security key is fragile — the 0.2.0
+release needed staged publish plus an approval step. npm supports trusted
+publishing: a tag-triggered GitHub Actions workflow mints a short-lived OIDC
+token, so no `NPM_TOKEN` and no OTP.
+
+### Decision
+
+Ship `release.yml` (on `v*` tags: `npm ci`, `npm test`,
+`npm publish --provenance --access public`, `id-token: write`). The operator
+enables the trusted publisher once on npmjs.com. Staged publish
+(`npm stage publish` / `approve`) remains the documented manual fallback.
+
+### Consequences
+
+- Future releases are a tag push; no publishing secret is stored in the repo.
+- Release automation depends on the one-time npmjs.com configuration.

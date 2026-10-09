@@ -10,6 +10,7 @@ import type { ScanReport } from "../src/types.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const transcriptFixture = path.join(here, "fixtures", "transcript.jsonl");
+const claudeFixture = path.join(here, "fixtures", "claude-code-transcript.jsonl");
 const cli = path.join(here, "..", "src", "cli.js");
 
 function runCli(args: string[]): { status: number | null; stdout: string; stderr: string } {
@@ -198,4 +199,45 @@ test("cli usage --scan-report enriches rows; a bad report exits 1", () => {
   const fail = runCli(["usage", transcriptFixture, "--scan-report", bad]);
   assert.equal(fail.status, 1);
   assert.match(fail.stderr, /not a mcp-weight report/);
+});
+
+test("parses Claude Code (Anthropic tool_use blocks) and dedupes by id", () => {
+  const report = readTranscriptFile(claudeFixture);
+  assert.equal(report.format, "claude-code");
+  assert.equal(report.totalCalls, 3);
+  assert.equal(report.totalTools, 2);
+  const byName = new Map(report.rows.map((r) => [r.tool, r]));
+  assert.equal(byName.get("Bash")?.calls, 2);
+  assert.equal(byName.get("Read")?.calls, 1);
+});
+
+test("format=simple ignores Anthropic content blocks", () => {
+  const report = readTranscriptFile(claudeFixture, { format: "simple" });
+  assert.equal(report.totalCalls, 0);
+  assert.equal(report.totalTools, 0);
+});
+
+test("format=claude-code ignores OpenAI-style tool_calls", () => {
+  const text =
+    '{"type":"assistant","message":{"role":"assistant","tool_calls":[{"name":"Bash","arguments":{}}]}}';
+  assert.equal(parseTranscript(text, { format: "claude-code" }).totalCalls, 0);
+});
+
+test("auto detects the simple dialect from tool_calls", () => {
+  const text =
+    '{"type":"assistant","message":{"role":"assistant","tool_calls":[{"name":"Bash","arguments":{}}]}}';
+  assert.equal(parseTranscript(text).format, "simple");
+});
+
+test("tool_use blocks without an id still count", () => {
+  const text =
+    '{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Grep"},{"type":"tool_use","name":"Grep"}]}}';
+  assert.equal(parseTranscript(text).totalCalls, 2);
+});
+
+test("cli usage --format claude-code reports the dialect and counts", () => {
+  const r = runCli(["usage", claudeFixture, "--format", "claude-code"]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Format: claude-code/);
+  assert.match(r.stdout, /3 call\(s\) across 2 tool\(s\)/);
 });

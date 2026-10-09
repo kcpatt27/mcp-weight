@@ -39,6 +39,7 @@ Source: `SPEC.md` (v0.1). Shipped surface: `README.md`. Why: `DECISIONS.md`.
 | Codex TOML support | 6th client | v0.1 | S | P | **[DONE]** (2026-10-09) |
 | Project/parent-directory discovery and multi-root scans | real workspaces | v0.1 | S | P | **[DONE]** (2026-10-09) |
 | Remote auth diagnostics (headers, OAuth servers) | honest failures | v0.1 | M | P | **[DONE]** (2026-10-09) |
+| Release automation — npm trusted publishing (OIDC) workflow | tag-push releases, no OTP | v0.2.0 | S | P | **[DONE]** (workflow; operator enables on npmjs.com) |
 
 **Stage 1 complete (2026-10-09).** Stage 2 below is research; the tool is
 otherwise feature-complete for its stated scope.
@@ -52,13 +53,15 @@ otherwise feature-complete for its stated scope.
 
 ### Per-use accounting — tracer bullet (2026-10-09)
 
-- **Tracer bullet, not the full item.** `usage` reads a simplified JSONL
-  transcript, counts per-tool calls, and can enrich rows with schema-token
-  weight from a scan report. It does **not** parse Claude Code's native session
-  logs yet.
-- **Evidence:** `tests/usage.test.ts` (11 tests), `tests/fixtures/transcript.jsonl`,
-  `docs/USAGE-TRANSCRIPT-FORMAT.md`, `src/usage.ts`, `docs/AUDIT-usage.md`
-  (independent audit, 2026-10-09).
+- **Tracer bullet, not the full item.** `usage` counts per-tool calls from a
+  JSONL transcript and can enrich rows with schema-token weight from a scan
+  report. Both the `simple` (OpenAI `tool_calls`) and `claude-code` (Anthropic
+  `tool_use` content blocks) dialects are supported via
+  `--format auto|simple|claude-code`, deduping repeated call ids. It does **not**
+  yet aggregate per session/turn.
+- **Evidence:** `tests/usage.test.ts` (17 tests), `tests/fixtures/transcript.jsonl`,
+  `tests/fixtures/claude-code-transcript.jsonl`, `docs/USAGE-TRANSCRIPT-FORMAT.md`,
+  `src/usage.ts`, `docs/AUDIT-usage.md` (independent audit, 2026-10-09).
 
 ## IMPOSSIBLE+
 
@@ -82,7 +85,8 @@ available. The tool stays small; the data feeds the Context Lab research line.
 3. **Codex TOML support** — done.
 4. **Project/parent-directory discovery** — done (up to the git root).
 5. **Remote auth diagnostics** — done (SSE fallback + actionable hints).
-6. **Per-use accounting** — Stage 2 tracer bullet (usage command).
+6. **Per-use accounting** — tracer bullet (`usage`; `simple` + `claude-code` dialects).
+7. **Release automation** — trusted-publishing workflow added; enable it on npmjs.com.
 
 ## Maintenance
 
