@@ -42,6 +42,7 @@ function parseArgs(argv: string[]): { args: Args; positionals: string[] } {
     switch (a) {
       case "scan":
       case "diff":
+      case "usage":
         args.command = a;
         break;
       case "help":
@@ -161,9 +162,9 @@ async function runScan(args: Args): Promise<number> {
   return 0;
 }
 
-function formatUsageReport(report: UsageReport, verbose: boolean): string {
+function formatUsageReport(report: UsageReport, verbose: boolean, version: string): string {
   const lines: string[] = [];
-  lines.push(`mcp-weight ${report.tool?.version ?? "?"} — usage report`);
+  lines.push(`mcp-weight ${version} — usage report`);
   lines.push(`Transcript: ${report.transcript}`);
   lines.push(`Scanned: ${report.scannedAt} · ${report.totalCalls} call(s) across ${report.totalTools} tool(s)`);
   lines.push("");
@@ -247,11 +248,7 @@ function runUsage(args: Args, positionals: string[]): number {
   let scanReport: ScanReport | undefined;
   if (args.scanReport) {
     try {
-      const parsed = JSON.parse(readFileSync(args.scanReport, "utf8")) as ScanReport;
-      if (!parsed || parsed.schemaVersion !== 1 || !Array.isArray(parsed.servers) || !parsed.totals) {
-        throw new Error(`${args.scanReport} is not a mcp-weight report (expected schemaVersion 1)`);
-      }
-      scanReport = parsed;
+      scanReport = readReport(args.scanReport);
     } catch (err) {
       console.error(`error: ${err instanceof Error ? err.message : String(err)}`);
       return 1;
@@ -261,7 +258,7 @@ function runUsage(args: Args, positionals: string[]): number {
   const report = readTranscriptFile(transcriptFile, { scanReport });
 
   if (args.json) console.log(JSON.stringify(report, null, 2));
-  else console.log(formatUsageReport(report, args.verbose));
+  else console.log(formatUsageReport(report, args.verbose, readPackage().version));
   return 0;
 }
 

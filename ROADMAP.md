@@ -56,8 +56,9 @@ otherwise feature-complete for its stated scope.
   transcript, counts per-tool calls, and can enrich rows with schema-token
   weight from a scan report. It does **not** parse Claude Code's native session
   logs yet.
-- **Evidence:** `tests/usage.test.ts` (7 tests), `tests/fixtures/transcript.jsonl`,
-  `docs/USAGE-TRANSCRIPT-FORMAT.md`, `src/usage.ts`.
+- **Evidence:** `tests/usage.test.ts` (11 tests), `tests/fixtures/transcript.jsonl`,
+  `docs/USAGE-TRANSCRIPT-FORMAT.md`, `src/usage.ts`, `docs/AUDIT-usage.md`
+  (independent audit, 2026-10-09).
 
 ## IMPOSSIBLE+
 

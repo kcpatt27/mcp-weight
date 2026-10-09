@@ -105,8 +105,9 @@ mcp-weight usage transcript.jsonl --json             # machine-readable
 The transcript is a JSONL file where each line is a JSON object
 with a `type` field. Tool calls are extracted from assistant
 messages (`message.role === "assistant"`, `message.tool_calls`).
-Unknown shapes are skipped with an error entry; the command never
-aborts. See [USAGE-TRANSCRIPT-FORMAT.md](docs/USAGE-TRANSCRIPT-FORMAT.md)
+Malformed lines (bad JSON, non-objects, missing `type`) are skipped
+with an error entry; the command never aborts. See
+[USAGE-TRANSCRIPT-FORMAT.md](docs/USAGE-TRANSCRIPT-FORMAT.md)
 for the full format description.
 
 ## Clients scanned

@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseTranscript, readTranscriptFile } from "../src/usage.js";
@@ -7,6 +10,12 @@ import type { ScanReport } from "../src/types.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const transcriptFixture = path.join(here, "fixtures", "transcript.jsonl");
+const cli = path.join(here, "..", "src", "cli.js");
+
+function runCli(args: string[]): { status: number | null; stdout: string; stderr: string } {
+  const r = spawnSync(process.execPath, [cli, ...args], { encoding: "utf8" });
+  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+}
 
 const sampleScanReport: ScanReport = {
   schemaVersion: 1,
@@ -144,4 +153,49 @@ test("parseTranscript without scanReport marks all rows as count-only", () => {
   assert.equal(report.rows[0]!.tokens, undefined);
   assert.equal(report.rows[0]!.tokenSource, "count-only");
   assert.equal(report.tool, null);
+});
+
+test("parseTranscript reports 1-based file line numbers, counting blank lines", () => {
+  const text = ["", "not json", "", '{"noType":true}', "   ", '{"type":123}'].join("\n");
+  const report = parseTranscript(text);
+  assert.deepEqual(report.errors, [
+    "line 2: not valid JSON",
+    'line 4: missing or non-string "type" field',
+    'line 6: missing or non-string "type" field',
+  ]);
+});
+
+test("cli dispatches `usage` (not `scan`) and prints a usage report", () => {
+  const r = runCli(["usage", transcriptFixture]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^mcp-weight \d+\.\d+\.\d+ — usage report$/m);
+  assert.match(r.stdout, /6 call\(s\) across 3 tool\(s\)/);
+});
+
+test("cli usage --json emits the usage schema, not a scan report", () => {
+  const r = runCli(["usage", transcriptFixture, "--json"]);
+  assert.equal(r.status, 0, r.stderr);
+  const report = JSON.parse(r.stdout) as { schemaVersion: number; totalCalls: number; servers?: unknown };
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.totalCalls, 6);
+  assert.equal(report.servers, undefined);
+});
+
+test("cli usage --scan-report enriches rows; a bad report exits 1", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "mcp-weight-usage-"));
+  const good = path.join(dir, "scan.json");
+  writeFileSync(good, JSON.stringify(sampleScanReport));
+
+  const ok = runCli(["usage", transcriptFixture, "--scan-report", good, "--json"]);
+  assert.equal(ok.status, 0, ok.stderr);
+  const report = JSON.parse(ok.stdout) as { rows: Array<{ tool: string; tokens?: number; tokenSource: string }> };
+  const bash = report.rows.find((row) => row.tool === "Bash");
+  assert.equal(bash?.tokens, 120);
+  assert.equal(bash?.tokenSource, "scan-report");
+
+  const bad = path.join(dir, "bad.json");
+  writeFileSync(bad, JSON.stringify({ hello: "world" }));
+  const fail = runCli(["usage", transcriptFixture, "--scan-report", bad]);
+  assert.equal(fail.status, 1);
+  assert.match(fail.stderr, /not a mcp-weight report/);
 });
