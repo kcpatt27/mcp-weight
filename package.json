@@ -1,6 +1,6 @@
 {
   "name": "mcp-weight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Weigh your MCP stack: how many context tokens each configured MCP server's tool schemas cost, across clients and configs.",
   "type": "module",
   "license": "MIT",
@@ -37,7 +37,8 @@
     "opencode"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-fixtures",
+    "copy-fixtures": "node scripts/copy-fixtures.mjs",
     "test": "npm run build && node scripts/test.mjs",
     "scan": "node dist/src/cli.js scan",
     "prepublishOnly": "npm run build"

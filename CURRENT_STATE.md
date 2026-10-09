@@ -30,9 +30,17 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
   `@kcpatt27/memvid-mcp` package now carries its deprecation message on the
   registry.
 
+**Stage 2 — per-use accounting (tracer bullet)**
+
+- `mcp-weight usage <transcript.jsonl>` parses a Claude Code-style JSONL transcript and reports per-tool call counts.
+- `--scan-report <path>` enriches each row with schema-token weight from a scan report JSON.
+- Unknown transcript shapes produce error entries and are skipped (never thrown).
+- `npm test` includes 7 fixture-driven transcript tests.
+- Docs: `docs/USAGE-TRANSCRIPT-FORMAT.md`.
+
 **Does not work / not built yet**
 
-- Per-use accounting from session logs (Stage 2, research).
+- Per-use accounting from Claude Code's native session logs (future Stage 2 work; current tracer bullet uses a simplified JSONL format).
 
 **Reproduce**
 
@@ -51,10 +59,25 @@ node dist/src/cli.js scan --verbose
   carry an actionable hint (auth / not-found / connection / timeout /
   protocol) shown under the table and in JSON. Added classifier + live HTTP-401
   tests. Tests 23 → 25. Stage 1 is done.
-- **Left:** nothing in Stage 1; Stage 2 (per-use accounting) is research and
-  optional.
-- **Next:** release `0.2.0` (optional), or move to Context Lab's D harness.
+- **Left:** nothing in Stage 1.
+- **Next:** Stage 2 per-use accounting tracer bullet.
 - **Evidence:** `tests/probe-errors.test.ts`; `npm test` 25/25.
+
+### 2026-10-09 — Stage 2: per-use accounting tracer bullet
+
+- **Did:** added `usage` command (`mcp-weight usage <transcript.jsonl>`) that
+  parses a Claude Code-style JSONL transcript and reports per-tool call counts.
+  With `--scan-report`, rows are enriched with schema-token weight from a scan
+  report JSON. Unknown transcript shapes produce error entries and are skipped
+  (never thrown). Added `src/usage.ts`, `tests/usage.test.ts` (6 tests),
+  `tests/fixtures/transcript.jsonl`, `docs/USAGE-TRANSCRIPT-FORMAT.md`.
+  Updated `src/cli.ts` (usage command + `--scan-report` flag), `src/index.ts`
+  (exports). `npm test` 25 → 32.
+- **Left:** full Claude Code native session-log parser; per-session/per-turn
+  cost breakdown; multi-client transcript format support.
+- **Next:** expand transcript parser to handle Claude Code's actual log format;
+  add per-session cost aggregation.
+- **Evidence:** `tests/usage.test.ts`; `npm test` 32/32.
 
 ### 2026-10-09 — Stage 1: Codex TOML + ancestor discovery
 

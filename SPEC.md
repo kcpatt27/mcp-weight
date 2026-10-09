@@ -65,9 +65,9 @@ pruning, profiling, or blaming the context window.
 - Tests: parser shapes, tokenizer sanity, end-to-end against an in-repo
   fixture MCP server.
 
-**Non-goals for v0.1:** Codex TOML configs, session-transcript per-use
-accounting, config writing, an MCP server wrapper, remote OAuth flows,
-telemetry (none, ever).
+**Non-goals for v0.1:** Codex TOML configs, config writing, an MCP server wrapper, remote OAuth flows, telemetry (none, ever).
+
+**Stage 2 research (tracer bullet):** per-use accounting from a simplified JSONL transcript format (`usage` command). This is not a full Claude Code session-log parser — it is a tracer bullet for the per-use accounting research track.
 
 ## 6. Success criteria (v0.1)
 

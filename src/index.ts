@@ -9,3 +9,5 @@ export type { ScanOptions } from "./scan.js";
 export { diffReports, formatDiff, evaluateThreshold } from "./diff.js";
 export type { DiffReport, ServerDelta, Threshold } from "./diff.js";
 export { measureTool, countTokens, estimateTokens, toolText, TOKENIZER_NAME, TOKENIZER_NOTE } from "./tokens.js";
+export { parseTranscript, readTranscriptFile } from "./usage.js";
+export type { UsageReport, UsageRow, UsageOptions } from "./usage.js";

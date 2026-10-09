@@ -45,10 +45,19 @@ otherwise feature-complete for its stated scope.
 
 ## Stage 2 — HARD (research)
 
-| Item | What it buys | Prerequisite | Class |
-| --- | --- | --- | --- |
-| Per-use accounting: read session logs per client, compute cost-per-use | "this server cost 17M tokens for 2 calls" | Stage 1; one transcript reader per client, each a moving target | R |
-| Longitudinal study: scans over time, published dataset + writeup (Context Lab) | evidence for pruning advice | Stage 1 snapshots | R |
+| Item | What it buys | Prerequisite | Class | Status |
+| --- | --- | --- | --- | --- |
+| Per-use accounting: read session logs per client, compute cost-per-use | "this server cost 17M tokens for 2 calls" | Stage 1; one transcript reader per client, each a moving target | R | **[DONE]** (tracer bullet, 2026-10-09) |
+| Longitudinal study: scans over time, published dataset + writeup (Context Lab) | evidence for pruning advice | Stage 1 snapshots | R | [ ] |
+
+### Per-use accounting — tracer bullet (2026-10-09)
+
+- **Tracer bullet, not the full item.** `usage` reads a simplified JSONL
+  transcript, counts per-tool calls, and can enrich rows with schema-token
+  weight from a scan report. It does **not** parse Claude Code's native session
+  logs yet.
+- **Evidence:** `tests/usage.test.ts` (7 tests), `tests/fixtures/transcript.jsonl`,
+  `docs/USAGE-TRANSCRIPT-FORMAT.md`, `src/usage.ts`.
 
 ## IMPOSSIBLE+
 
@@ -72,7 +81,7 @@ available. The tool stays small; the data feeds the Context Lab research line.
 3. **Codex TOML support** — done.
 4. **Project/parent-directory discovery** — done (up to the git root).
 5. **Remote auth diagnostics** — done (SSE fallback + actionable hints).
-6. **Per-use accounting** — Stage 2 research (optional; not a commitment).
+6. **Per-use accounting** — Stage 2 tracer bullet (usage command).
 
 ## Maintenance
 

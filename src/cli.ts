@@ -6,7 +6,9 @@ import { resolveSpecs } from "./config/resolve.js";
 import { diffReports, evaluateThreshold, formatDiff } from "./diff.js";
 import { formatReport } from "./report.js";
 import { scanSpecs } from "./scan.js";
+import { readTranscriptFile, parseTranscript } from "./usage.js";
 import type { ScanReport } from "./types.js";
+import type { UsageReport } from "./usage.js";
 
 interface Args {
   command: string;
@@ -18,6 +20,7 @@ interface Args {
   out?: string;
   failOver?: number;
   failPercent?: number;
+  scanReport?: string;
   help: boolean;
   version: boolean;
 }
@@ -87,6 +90,12 @@ function parseArgs(argv: string[]): { args: Args; positionals: string[] } {
         args.contextWindow = v;
         break;
       }
+      case "--scan-report": {
+        const v = argv[++i];
+        if (!v) throw new Error("--scan-report requires a path");
+        args.scanReport = v;
+        break;
+      }
       case "--help":
       case "-h":
         args.help = true;
@@ -152,6 +161,110 @@ async function runScan(args: Args): Promise<number> {
   return 0;
 }
 
+function formatUsageReport(report: UsageReport, verbose: boolean): string {
+  const lines: string[] = [];
+  lines.push(`mcp-weight ${report.tool?.version ?? "?"} — usage report`);
+  lines.push(`Transcript: ${report.transcript}`);
+  lines.push(`Scanned: ${report.scannedAt} · ${report.totalCalls} call(s) across ${report.totalTools} tool(s)`);
+  lines.push("");
+
+  if (report.rows.length === 0) {
+    lines.push("No tool calls found.");
+  } else {
+    interface Row {
+      tool: string;
+      calls: string;
+      tokens: string;
+      source: string;
+    }
+    const rows: Row[] = report.rows.map((r) => ({
+      tool: r.tool,
+      calls: String(r.calls),
+      tokens: r.tokens !== undefined ? String(r.tokens) : "-",
+      source: r.tokenSource,
+    }));
+
+    const headers: Row = {
+      tool: "TOOL",
+      calls: "CALLS",
+      tokens: "TOKENS",
+      source: "SOURCE",
+    };
+    const width = (key: keyof Row, min: number): number =>
+      Math.max(min, ...rows.map((r) => r[key].length));
+    const w = {
+      tool: width("tool", headers.tool.length),
+      calls: width("calls", headers.calls.length),
+      tokens: width("tokens", headers.tokens.length),
+      source: width("source", headers.source.length),
+    };
+    const line = (r: Row): string =>
+      [
+        pad(r.tool, w.tool),
+        padL(r.calls, w.calls),
+        padL(r.tokens, w.tokens),
+        pad(r.source, w.source),
+      ].join("  ");
+
+  const pad = (s: string, w: number): string => (s.length >= w ? s : s + " ".repeat(w - s.length));
+  const padL = (s: string, w: number): string => s.length >= w ? s : " ".repeat(w - s.length) + s;
+
+    lines.push(line(headers));
+    lines.push(
+      [
+        "-".repeat(w.tool),
+        "-".repeat(w.calls),
+        "-".repeat(w.tokens),
+        "-".repeat(w.source),
+      ].join("  ")
+    );
+    for (const r of rows) lines.push(line(r));
+
+    if (verbose) {
+      lines.push("");
+      lines.push("Token source: \"scan-report\" means the token weight comes from a scan report (--scan-report). \"count-only\" means no scan report was provided.");
+    }
+  }
+
+  if (report.errors.length) {
+    lines.push("");
+    lines.push(`Errors (${report.errors.length}):`);
+    for (const e of report.errors) {
+      lines.push(`  ${e}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function runUsage(args: Args, positionals: string[]): number {
+  const transcriptFile = positionals[0];
+  if (!transcriptFile) {
+    console.error("usage: mcp-weight usage <transcript.jsonl> [--scan-report <scan.json>] [--json] [--verbose]");
+    return 2;
+  }
+
+  let scanReport: ScanReport | undefined;
+  if (args.scanReport) {
+    try {
+      const parsed = JSON.parse(readFileSync(args.scanReport, "utf8")) as ScanReport;
+      if (!parsed || parsed.schemaVersion !== 1 || !Array.isArray(parsed.servers) || !parsed.totals) {
+        throw new Error(`${args.scanReport} is not a mcp-weight report (expected schemaVersion 1)`);
+      }
+      scanReport = parsed;
+    } catch (err) {
+      console.error(`error: ${err instanceof Error ? err.message : String(err)}`);
+      return 1;
+    }
+  }
+
+  const report = readTranscriptFile(transcriptFile, { scanReport });
+
+  if (args.json) console.log(JSON.stringify(report, null, 2));
+  else console.log(formatUsageReport(report, args.verbose));
+  return 0;
+}
+
 function runDiff(args: Args, positionals: string[]): number {
   const beforeFile = positionals[0];
   const afterFile = positionals[1];
@@ -181,6 +294,7 @@ function printHelp(pkg: { name: string; version: string }): void {
 
 Usage:
   mcp-weight scan [options]
+  mcp-weight usage <transcript.jsonl> [options]
   mcp-weight diff <before.json> <after.json> [options]
 
 Scan options:
@@ -190,6 +304,11 @@ Scan options:
   --verbose, -v          Per-tool breakdown
   --timeout <ms>         Per-server probe timeout (default 15000)
   --context-window <n>   Window size for the % column (default 200000)
+
+Usage options:
+  --scan-report <path>   Enrich per-tool counts with schema-token weight from a scan report
+  --json                 Machine-readable output
+  --verbose, -v          Show token source column and notes
 
 Diff options:
   --fail-over <tokens>   Exit 2 if total tokens increase by more than this
@@ -203,7 +322,7 @@ With no --config, scans project configs from cwd up to the git root, plus
 user configs, for Cursor, Claude Code, Claude Desktop, OpenCode, VS Code,
 and Codex.
 
-Exit codes: 0 ok · 1 error/no configs · 2 usage or gate failure.
+Exit codes: 0 ok · 1 error · 2 usage or gate failure.
 
 Read-only: mcp-weight never writes configs and never prints secret values.`);
 }
@@ -229,6 +348,7 @@ async function main(): Promise<number> {
   }
   try {
     if (args.command === "diff") return runDiff(args, positionals);
+    if (args.command === "usage") return runUsage(args, positionals);
     if (args.command === "scan") return await runScan(args);
     console.error(`unknown command: ${args.command}`);
     printHelp(pkg);

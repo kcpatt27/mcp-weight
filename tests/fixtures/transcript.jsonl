@@ -1,0 +1,9 @@
+{"type":"user","message":{"role":"user","content":"List the files in the project."}}
+{"type":"assistant","message":{"role":"assistant","content":"I'll list the files for you.","tool_calls":[{"name":"Bash","arguments":{"command":"ls -la"}}]}}
+{"type":"assistant","message":{"role":"assistant","content":"Here are the results.","tool_calls":[{"name":"Bash","arguments":{"command":"cat package.json"}}]}}
+{"type":"user","message":{"role":"user","content":"Now read the README."}}
+{"type":"assistant","message":{"role":"assistant","content":"Reading the README now.","tool_calls":[{"name":"Read","arguments":{"file":"README.md"}}]}}
+{"type":"assistant","message":{"role":"assistant","content":"Done."}}
+{"type":"assistant","message":{"role":"assistant","content":"Let me also check the config.","tool_calls":[{"name":"Glob","arguments":{"pattern":"**/*.json"}},{"name":"Bash","arguments":{"command":"pwd"}}]}}
+{"type":"user","message":{"role":"user","content":"Good."}}
+{"type":"assistant","message":{"role":"assistant","content":"All set.","tool_calls":[{"name":"Bash","arguments":{"command":"echo done"}}]}}

@@ -94,6 +94,21 @@ In a workflow:
 `--fail-over` is absolute tokens; `--fail-percent` is a percentage. With
 neither flag, `diff` reports and exits 0.
 
+## Per-use accounting
+
+```bash
+mcp-weight usage transcript.jsonl                    # per-tool call counts
+mcp-weight usage transcript.jsonl --scan-report scan-report.json  # with schema-token weight
+mcp-weight usage transcript.jsonl --json             # machine-readable
+```
+
+The transcript is a JSONL file where each line is a JSON object
+with a `type` field. Tool calls are extracted from assistant
+messages (`message.role === "assistant"`, `message.tool_calls`).
+Unknown shapes are skipped with an error entry; the command never
+aborts. See [USAGE-TRANSCRIPT-FORMAT.md](docs/USAGE-TRANSCRIPT-FORMAT.md)
+for the full format description.
+
 ## Clients scanned
 
 | Client | Config paths |
