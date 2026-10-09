@@ -40,7 +40,9 @@ node dist/src/cli.js scan --verbose
 
 - **Did:** pushed the repo to GitHub (`kcpatt27/mcp-weight`), added a
   cross-platform CI workflow and package metadata (repository/homepage/bugs);
-  recorded that npm publish is blocked on account recovery.
+  created the [Context Lab](https://github.com/kcpatt27/context-lab) hub and
+  linked it from the README; recorded that npm publish is blocked on account
+  recovery.
 - **Left:** npm publish (account recovery); Stage 1 items.
 - **Next:** recover npm access (or create an automation token from a recovered
   account), then `npm publish`; meanwhile Stage 1 snapshot/diff work can start.

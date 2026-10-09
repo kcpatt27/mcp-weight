@@ -94,6 +94,14 @@ Codex TOML is a Stage 1 item, not supported yet.
 6. [`AGENTS.md`](AGENTS.md) — session contract for agents (also good for humans).
 7. [`CURRENT_STATE.md`](CURRENT_STATE.md) — live snapshot and session ledger.
 
+## Research context
+
+mcp-weight is the measurement instrument for the **MCP token tax** experiment in
+[Context Lab](https://github.com/kcpatt27/context-lab), which studies how coding
+agents spend and conserve context. Sibling project:
+[living-state-machine](https://github.com/kcpatt27/living-state-machine) (prior
+memory research). Tools stay standalone; the lab links them.
+
 ## License
 
 MIT.
