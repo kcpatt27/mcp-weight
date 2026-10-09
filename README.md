@@ -4,7 +4,7 @@
 every configured server, and reports how many context tokens their tool schemas
 cost — per tool, per server, per client, with provenance.
 
-**Status:** v0.1.0 published to npm. Honest frontier: [`ROADMAP.md`](ROADMAP.md).
+**Status:** v0.2.0 published to npm. Honest frontier: [`ROADMAP.md`](ROADMAP.md).
 
 [![npm](https://img.shields.io/npm/v/mcp-weight)](https://www.npmjs.com/package/mcp-weight)
 [![ci](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml/badge.svg)](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml)
