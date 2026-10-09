@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
+    "test": "npm run build && node scripts/test.mjs",
     "scan": "node dist/src/cli.js scan",
     "prepublishOnly": "npm run build"
   },
