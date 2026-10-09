@@ -8,6 +8,7 @@ cost — per tool, per server, per client, with provenance.
 publish is pending. Honest frontier: [`ROADMAP.md`](ROADMAP.md).
 
 ![status: MVP in progress](https://img.shields.io/badge/status-v0.1%20in%20development-yellow)
+[![ci](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml/badge.svg)](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml)
 
 ## Why
 

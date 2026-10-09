@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "author": "Kalen Patterson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kcpatt27/mcp-weight.git"
+  },
+  "homepage": "https://github.com/kcpatt27/mcp-weight#readme",
+  "bugs": {
+    "url": "https://github.com/kcpatt27/mcp-weight/issues"
+  },
   "bin": {
     "mcp-weight": "dist/src/cli.js"
   },
