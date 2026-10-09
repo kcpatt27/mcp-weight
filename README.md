@@ -109,6 +109,10 @@ neither flag, `diff` reports and exits 0.
 Project configs are discovered from the working directory **up to the git root**;
 user-level configs are always checked.
 
+Remote (HTTP) servers are probed as Streamable HTTP and then legacy SSE.
+Auth failures, missing commands, and unreachable servers get an actionable
+`hint` on the row instead of aborting the scan.
+
 ## Documentation (reading order)
 
 1. [`SPEC.md`](SPEC.md) — source of truth: problem, scope, success criteria.

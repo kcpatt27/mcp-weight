@@ -111,6 +111,7 @@ export function formatReport(report: ScanReport, verbose = false): string {
     lines.push("");
     for (const f of failures) {
       lines.push(`! ${f.client}/${f.name}: ${f.status}${f.error ? ` — ${f.error}` : ""}`);
+      if (f.hint) lines.push(`    hint: ${f.hint}`);
     }
   }
 

@@ -16,9 +16,12 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - Codex TOML configs (`~/.codex/config.toml`) parse into the same normalized
   specs (stdio + remote).
 - Project configs are discovered from `cwd` up to the git root (nearest first).
-- `npm test`: **23/23** (parser shapes incl. TOML, JSONC strip, redaction,
+- Remote (HTTP) probes try Streamable HTTP then legacy SSE; failures carry an
+  actionable hint (auth / not-found / connection / timeout / protocol).
+- `npm test`: **25/25** (parser shapes incl. TOML, JSONC strip, redaction,
   tokenizer sanity, fixture stdio end-to-end + error path, diff semantics, CLI
-  `scan --out` + `diff --fail-over` integration, ancestor discovery).
+  `scan --out` + `diff --fail-over` integration, ancestor discovery, HTTP 401
+  hint path).
 - Snapshot + diff + CI gate: `scan --out <file>` writes a JSON report;
   `diff <before> <after> [--fail-over N] [--fail-percent P]` exits 2 when the
   gate is exceeded.
@@ -41,6 +44,17 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-09 — Stage 1: remote auth diagnostics (Stage 1 complete)
+
+- **Did:** HTTP probes now try Streamable HTTP then legacy SSE; failed probes
+  carry an actionable hint (auth / not-found / connection / timeout /
+  protocol) shown under the table and in JSON. Added classifier + live HTTP-401
+  tests. Tests 23 → 25. Stage 1 is done.
+- **Left:** nothing in Stage 1; Stage 2 (per-use accounting) is research and
+  optional.
+- **Next:** release `0.2.0` (optional), or move to Context Lab's D harness.
+- **Evidence:** `tests/probe-errors.test.ts`; `npm test` 25/25.
 
 ### 2026-10-09 — Stage 1: Codex TOML + ancestor discovery
 

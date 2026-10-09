@@ -30,6 +30,7 @@ export type ProbeStatus = "ok" | "error" | "timeout";
 export interface ProbeResult {
   status: ProbeStatus;
   error?: string;
+  hint?: string;
   serverVersion?: string;
   tools: RawTool[];
 }
@@ -51,6 +52,7 @@ export interface ServerReport {
   enabled: boolean;
   status: ProbeStatus | "disabled";
   error?: string;
+  hint?: string;
   serverVersion?: string;
   envKeys?: string[];
   headerKeys?: string[];

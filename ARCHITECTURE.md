@@ -28,9 +28,10 @@ config paths   →   client shapes → ServerSpec  →  SDK client connects  →
    kept but marked. Env/header values are retained in memory for launching the
    server, and never serialized.
 3. **probe** (`src/mcp/probe.ts`) — official MCP SDK client; stdio
-   (`StdioClientTransport`) or HTTP (`StreamableHTTPClientTransport`);
-   `tools/list` + `getServerVersion()`; per-server timeout; client closed on
-   both paths. Returns raw tools or an error/timeout marker.
+   (`StdioClientTransport`) or HTTP, where HTTP is tried as Streamable HTTP and
+   then legacy SSE; `tools/list` + `getServerVersion()`; per-server timeout.
+   Failures carry an actionable `hint` (auth / not-found / connection /
+   timeout / protocol). Client is closed on every path.
 4. **account** (`src/tokens.ts`) — `semantics-free` measurement: the text
    `name + "\n" + description + "\n" + JSON.stringify(inputSchema)`, tokenized
    with `cl100k_base`; chars/4 reported beside it. Tokenizer name travels in
@@ -72,4 +73,5 @@ report. Stated here so it is never forgotten.
 - **Dynamic servers:** tools may vary by session; a scan is a snapshot with a
   timestamp, not a guarantee.
 - **Auth:** remote servers requiring OAuth will fail the probe; the report
-  shows the error rather than guessing.
+  shows an auth hint rather than guessing. mcp-weight never performs an auth
+  flow.

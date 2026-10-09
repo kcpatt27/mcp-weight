@@ -44,6 +44,7 @@ export async function scanSpecs(specs: ServerSpec[], opts: ScanOptions): Promise
       ...base,
       status: res.status,
       error: res.error,
+      hint: res.hint,
       serverVersion: res.serverVersion,
       tools,
       totalTokens: tools.reduce((a, t) => a + t.tokens, 0),
