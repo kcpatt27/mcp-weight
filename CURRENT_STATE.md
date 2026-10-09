@@ -16,11 +16,12 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - `npm test`: **13/13** (parser shapes, JSONC strip, redaction, tokenizer
   sanity, fixture stdio end-to-end + error path).
 - GitHub repository is live with a CI workflow (ubuntu + windows, Node 20/24).
+- Published to npm: **`mcp-weight@0.1.0`** (2026-10-09). The legacy
+  `@kcpatt27/memvid-mcp` package now carries its deprecation message on the
+  registry.
 
 **Does not work / not built yet**
 
-- `npm publish` is blocked: operator no longer has the npm password. Publish
-  requires account recovery first.
 - Codex TOML configs (Stage 1).
 - Snapshot/diff/CI gate (Stage 1).
 - Per-use accounting from session logs (Stage 2, research).
@@ -36,7 +37,18 @@ node dist/src/cli.js scan --verbose
 
 ## Session ledger
 
-### 2026-10-09 — publish-blocked; repo taken to GitHub; CI added
+### 2026-10-09 — published 0.1.0; legacy package deprecated
+
+- **Did:** operator published `mcp-weight@0.1.0` to npm from the laptop
+  (browser + security-key login), and deprecated `@kcpatt27/memvid-mcp` with
+  the MemVid v1 message. Docs flipped to match.
+- **Left:** npm access on the desktop is still security-key-gated (operator is
+  adding a TOTP method separately); Stage 1 items.
+- **Next:** snapshot/diff + CI gate.
+- **Evidence:** npm packument (`mcp-weight@0.1.0`, published 2026-10-09T15:40Z);
+  `npm view @kcpatt27/memvid-mcp deprecated`.
+
+### 2026-10-09 — repo to GitHub; CI added
 
 - **Did:** pushed the repo to GitHub (`kcpatt27/mcp-weight`), added a
   cross-platform CI workflow and package metadata (repository/homepage/bugs);

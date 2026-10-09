@@ -16,7 +16,7 @@ Source: `SPEC.md` (v0.1). Shipped surface: `README.md`. Why: `DECISIONS.md`.
 | --- | --- | --- | --- | --- | --- |
 | Repo foundation — docs, TS scaffold, tests harness | ready to code | — | S | MVP | **[DONE]** (2026-10-05) |
 | v0.1 scan — discovery (5 clients + `--config`), JSONC, stdio+HTTP probe, token accounting, table/JSON report, fixture test | the number | foundation | M | MVP | **[DONE]** (2026-10-05) |
-| Publish `mcp-weight@0.1.0` to npm | `npx mcp-weight` | v0.1 | S | P | **[NEXT]** (operator npm login) |
+| Publish `mcp-weight@0.1.0` to npm | `npx mcp-weight` | v0.1 | S | P | **[DONE]** (2026-10-09, [npm](https://www.npmjs.com/package/mcp-weight)) |
 
 ### v0.1 scan — [DONE] (2026-10-05)
 
@@ -35,7 +35,7 @@ Source: `SPEC.md` (v0.1). Shipped surface: `README.md`. Why: `DECISIONS.md`.
 
 | Item | Purpose | Deps | Complexity | Class | Status |
 | --- | --- | --- | --- | --- | --- |
-| Snapshot + diff + CI gate (`scan --out`, `diff --fail-over`) | catch config bloat in review | v0.1 | M | P | [ ] |
+| Snapshot + diff + CI gate (`scan --out`, `diff --fail-over`) | catch config bloat in review | v0.1 | M | P | **[NEXT]** |
 | Codex TOML support | 6th client | v0.1 | S | P | [ ] |
 | Project/parent-directory discovery and multi-root scans | real workspaces | v0.1 | S | P | [ ] |
 | Remote auth diagnostics (headers, OAuth servers) | honest failures | v0.1 | M | P | [ ] |
@@ -64,11 +64,10 @@ available. The tool stays small; the data feeds the Context Lab research line.
 
 ## Working order (pick list)
 
-1. **v0.1 scan [NEXT]** — the MVP.
-2. Publish to npm (operator login).
-3. Snapshot + diff + CI gate.
-4. Codex TOML + parent-directory discovery.
-5. Per-use accounting (research spike, not a commitment).
+1. **v0.1 scan** — done; published as `0.1.0`.
+2. **Snapshot + diff + CI gate [NEXT]** — catch config bloat in review.
+3. Codex TOML + parent-directory discovery.
+4. Per-use accounting (research spike, not a commitment).
 
 ## Maintenance
 

@@ -4,10 +4,9 @@
 every configured server, and reports how many context tokens their tool schemas
 cost — per tool, per server, per client, with provenance.
 
-**Status:** v0.1 in development. The scan runs from a local checkout; npm
-publish is pending. Honest frontier: [`ROADMAP.md`](ROADMAP.md).
+**Status:** v0.1.0 published to npm. Honest frontier: [`ROADMAP.md`](ROADMAP.md).
 
-![status: MVP in progress](https://img.shields.io/badge/status-v0.1%20in%20development-yellow)
+[![npm](https://img.shields.io/npm/v/mcp-weight)](https://www.npmjs.com/package/mcp-weight)
 [![ci](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml/badge.svg)](https://github.com/kcpatt27/mcp-weight/actions/workflows/ci.yml)
 
 ## Why
@@ -21,19 +20,24 @@ Related work exists and is credited in [`SPEC.md`](SPEC.md) §4:
 `mcp-tax` (Claude configs), `mcp-diet` (config profiles). `mcp-weight`'s angle:
 **cross-client measurement with provenance, snapshots, and no fake precision.**
 
-## Quick start (from source)
+## Quick start
 
 ```bash
-npm install
-npm run build
-node dist/src/cli.js scan        # pretty report
-node dist/src/cli.js scan --json # machine-readable
+npx mcp-weight scan        # pretty report
+npx mcp-weight scan --json # machine-readable
+```
+
+From source:
+
+```bash
+npm install && npm run build
+node dist/src/cli.js scan
 ```
 
 Point it at specific files instead of auto-discovery:
 
 ```bash
-node dist/src/cli.js scan --config ~/.cursor/mcp.json --config ./opencode.jsonc
+npx mcp-weight scan --config ~/.cursor/mcp.json --config ./opencode.jsonc
 ```
 
 ## What a report looks like
