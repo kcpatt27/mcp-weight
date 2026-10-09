@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { clientForPath, discoverExisting } from "./config/discover.js";
-import { parseConfigText } from "./config/parse.js";
-import { probeServer } from "./mcp/probe.js";
-import { buildTotals, formatReport } from "./report.js";
-import { measureTool, TOKENIZER_NAME, TOKENIZER_NOTE } from "./tokens.js";
-import type { ScanReport, ServerReport, ServerSpec } from "./types.js";
+import { resolveSpecs } from "./config/resolve.js";
+import { diffReports, evaluateThreshold, formatDiff } from "./diff.js";
+import { formatReport } from "./report.js";
+import { scanSpecs } from "./scan.js";
+import type { ScanReport } from "./types.js";
 
 interface Args {
   command: string;
@@ -16,11 +15,14 @@ interface Args {
   verbose: boolean;
   timeoutMs: number;
   contextWindow: number;
+  out?: string;
+  failOver?: number;
+  failPercent?: number;
   help: boolean;
   version: boolean;
 }
 
-function parseArgs(argv: string[]): Args {
+function parseArgs(argv: string[]): { args: Args; positionals: string[] } {
   const args: Args = {
     command: "scan",
     configs: [],
@@ -31,12 +33,13 @@ function parseArgs(argv: string[]): Args {
     help: false,
     version: false,
   };
-  const positional: string[] = [];
+  const positionals: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i] as string;
     switch (a) {
       case "scan":
-        args.command = "scan";
+      case "diff":
+        args.command = a;
         break;
       case "help":
         args.command = "help";
@@ -45,6 +48,24 @@ function parseArgs(argv: string[]): Args {
         const v = argv[++i];
         if (!v) throw new Error("--config requires a path");
         args.configs.push(v);
+        break;
+      }
+      case "--out": {
+        const v = argv[++i];
+        if (!v) throw new Error("--out requires a path");
+        args.out = v;
+        break;
+      }
+      case "--fail-over": {
+        const v = Number(argv[++i]);
+        if (!Number.isFinite(v)) throw new Error("--fail-over requires a token count");
+        args.failOver = v;
+        break;
+      }
+      case "--fail-percent": {
+        const v = Number(argv[++i]);
+        if (!Number.isFinite(v)) throw new Error("--fail-percent requires a percentage");
+        args.failPercent = v;
         break;
       }
       case "--json":
@@ -75,11 +96,10 @@ function parseArgs(argv: string[]): Args {
         break;
       default:
         if (a.startsWith("-")) throw new Error(`unknown flag: ${a}`);
-        positional.push(a);
+        positionals.push(a);
     }
   }
-  if (positional.length > 0) args.command = positional[0] as string;
-  return args;
+  return { args, positionals };
 }
 
 function readPackage(): { name: string; version: string } {
@@ -99,92 +119,60 @@ function readPackage(): { name: string; version: string } {
   return { name: "mcp-weight", version: "0.0.0" };
 }
 
-function resolveSpecs(configs: string[]): ServerSpec[] {
-  const specs: ServerSpec[] = [];
-  const candidates = configs.length
-    ? configs.map((p) => ({ client: clientForPath(path.resolve(p)), path: path.resolve(p) }))
-    : discoverExisting(process.cwd());
-
-  for (const c of candidates) {
-    try {
-      const text = readFileSync(c.path, "utf8");
-      const parsed = parseConfigText(text, c.path, c.client);
-      if (parsed.specs.length === 0) {
-        console.error(`warn: no MCP servers found in ${c.path} (shape: ${parsed.shape})`);
-      }
-      specs.push(...parsed.specs);
-    } catch (err) {
-      console.error(
-        `warn: failed to parse ${c.path}: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
+function readReport(file: string): ScanReport {
+  const parsed = JSON.parse(readFileSync(file, "utf8")) as ScanReport;
+  if (!parsed || parsed.schemaVersion !== 1 || !Array.isArray(parsed.servers) || !parsed.totals) {
+    throw new Error(`${file} is not a mcp-weight report (expected schemaVersion 1)`);
   }
-  return specs;
+  return parsed;
 }
 
-async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let index = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
-    for (;;) {
-      const i = index++;
-      if (i >= items.length) return;
-      results[i] = await fn(items[i] as T);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
-
-async function scan(args: Args): Promise<number> {
-  const specs = resolveSpecs(args.configs);
+async function runScan(args: Args): Promise<number> {
+  const specs = resolveSpecs(args.configs, process.cwd());
   if (specs.length === 0) {
     console.error(
       "No MCP configs found. Pass --config <path>, or run where a client config exists.\n" +
-        "Looked for: Cursor, Claude Code, Claude Desktop, OpenCode, VS Code (project + user)."
+        "Looked for: Cursor, Claude Code, Claude Desktop, OpenCode, VS Code, Codex (project + user)."
     );
     return 1;
   }
-
   const pkg = readPackage();
-  const servers = await pool(specs, 4, async (spec): Promise<ServerReport> => {
-    const base = {
-      name: spec.name,
-      client: spec.client,
-      sourcePath: spec.sourcePath,
-      transport: spec.transport,
-      enabled: spec.enabled,
-      envKeys: spec.envKeys,
-      headerKeys: spec.headerKeys,
-    };
-    if (!spec.enabled) {
-      return { ...base, status: "disabled", tools: [], totalTokens: 0, totalChars: 0 };
-    }
-    const res = await probeServer(spec, args.timeoutMs);
-    const tools = res.tools.map(measureTool);
-    return {
-      ...base,
-      status: res.status,
-      error: res.error,
-      serverVersion: res.serverVersion,
-      tools,
-      totalTokens: tools.reduce((a, t) => a + t.tokens, 0),
-      totalChars: tools.reduce((a, t) => a + t.chars, 0),
-    };
+  const report = await scanSpecs(specs, {
+    timeoutMs: args.timeoutMs,
+    contextWindow: args.contextWindow,
+    tool: pkg,
   });
 
-  const report: ScanReport = {
-    schemaVersion: 1,
-    tool: pkg,
-    tokenizer: { name: TOKENIZER_NAME, note: TOKENIZER_NOTE },
-    scannedAt: new Date().toISOString(),
-    contextWindow: args.contextWindow,
-    servers,
-    totals: buildTotals(servers),
-  };
-
+  if (args.out) {
+    writeFileSync(args.out, `${JSON.stringify(report, null, 2)}\n`);
+    console.error(`wrote ${args.out}`);
+  }
   if (args.json) console.log(JSON.stringify(report, null, 2));
   else console.log(formatReport(report, args.verbose));
+  return 0;
+}
+
+function runDiff(args: Args, positionals: string[]): number {
+  const beforeFile = positionals[0];
+  const afterFile = positionals[1];
+  if (!beforeFile || !afterFile) {
+    console.error(
+      "usage: mcp-weight diff <before.json> <after.json> [--fail-over N] [--fail-percent P] [--json]"
+    );
+    return 2;
+  }
+  const before = readReport(beforeFile);
+  const after = readReport(afterFile);
+  const diff = diffReports(before, after);
+
+  if (args.json) console.log(JSON.stringify(diff, null, 2));
+  else console.log(formatDiff(diff));
+
+  const verdict = evaluateThreshold(diff, { failOver: args.failOver, failPercent: args.failPercent });
+  if (verdict.failed) {
+    console.error(`gate failed: ${verdict.reason}`);
+    return 2;
+  }
   return 0;
 }
 
@@ -193,31 +181,43 @@ function printHelp(pkg: { name: string; version: string }): void {
 
 Usage:
   mcp-weight scan [options]
+  mcp-weight diff <before.json> <after.json> [options]
 
-Options:
+Scan options:
   --config <path>        Scan a specific config file (repeatable)
+  --out <path>           Also write the JSON report to a file
   --json                 Machine-readable output
   --verbose, -v          Per-tool breakdown
   --timeout <ms>         Per-server probe timeout (default 15000)
   --context-window <n>   Window size for the % column (default 200000)
+
+Diff options:
+  --fail-over <tokens>   Exit 2 if total tokens increase by more than this
+  --fail-percent <pct>   Exit 2 if total tokens increase by more than this %
+  --json                 Machine-readable diff
+
   --help, -h             Show this help
   --version              Show version
 
 With no --config, scans discovered project + user configs for Cursor,
-Claude Code, Claude Desktop, OpenCode, and VS Code.
+Claude Code, Claude Desktop, OpenCode, VS Code, and Codex.
+
+Exit codes: 0 ok · 1 error/no configs · 2 usage or gate failure.
 
 Read-only: mcp-weight never writes configs and never prints secret values.`);
 }
 
 async function main(): Promise<number> {
-  let args: Args;
+  let parsed: { args: Args; positionals: string[] };
   try {
-    args = parseArgs(process.argv.slice(2));
+    parsed = parseArgs(process.argv.slice(2));
   } catch (err) {
     console.error(`error: ${err instanceof Error ? err.message : String(err)}`);
     return 2;
   }
+  const { args, positionals } = parsed;
   const pkg = readPackage();
+
   if (args.version) {
     console.log(`${pkg.name} ${pkg.version}`);
     return 0;
@@ -226,13 +226,12 @@ async function main(): Promise<number> {
     printHelp(pkg);
     return 0;
   }
-  if (args.command !== "scan") {
+  try {
+    if (args.command === "diff") return runDiff(args, positionals);
+    if (args.command === "scan") return await runScan(args);
     console.error(`unknown command: ${args.command}`);
     printHelp(pkg);
     return 2;
-  }
-  try {
-    return await scan(args);
   } catch (err) {
     console.error(`error: ${err instanceof Error ? err.message : String(err)}`);
     return 1;

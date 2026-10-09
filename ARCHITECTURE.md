@@ -45,12 +45,14 @@ config paths   →   client shapes → ServerSpec  →  SDK client connects  →
 | Tokenizer | `src/tokens.ts` | built |
 | Config discovery | `src/config/discover.ts` | built |
 | Config parsing / normalizing | `src/config/parse.ts` | built |
+| Config resolution | `src/config/resolve.ts` | built |
+| Scan orchestration | `src/scan.ts` | built |
 | Server probing | `src/mcp/probe.ts` | built |
+| Diff + CI gate | `src/diff.ts` | built |
 | Report formatting | `src/report.ts` | built |
 | CLI | `src/cli.ts` | built |
 | Serial per-use accounting | — | **not built** (Stage 2 research) |
 | Codex TOML parsing | — | **not built** (Stage 1) |
-| Snapshot/diff/CI gate | — | **not built** (Stage 1) |
 | MCP server wrapper | — | **not built by design** (ADR-0002) |
 
 ## The observer effect

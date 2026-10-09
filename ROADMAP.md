@@ -35,8 +35,8 @@ Source: `SPEC.md` (v0.1). Shipped surface: `README.md`. Why: `DECISIONS.md`.
 
 | Item | Purpose | Deps | Complexity | Class | Status |
 | --- | --- | --- | --- | --- | --- |
-| Snapshot + diff + CI gate (`scan --out`, `diff --fail-over`) | catch config bloat in review | v0.1 | M | P | **[NEXT]** |
-| Codex TOML support | 6th client | v0.1 | S | P | [ ] |
+| Snapshot + diff + CI gate (`scan --out`, `diff --fail-over`) | catch config bloat in review | v0.1 | M | P | **[DONE]** (2026-10-09) |
+| Codex TOML support | 6th client | v0.1 | S | P | **[NEXT]** |
 | Project/parent-directory discovery and multi-root scans | real workspaces | v0.1 | S | P | [ ] |
 | Remote auth diagnostics (headers, OAuth servers) | honest failures | v0.1 | M | P | [ ] |
 
@@ -65,9 +65,11 @@ available. The tool stays small; the data feeds the Context Lab research line.
 ## Working order (pick list)
 
 1. **v0.1 scan** — done; published as `0.1.0`.
-2. **Snapshot + diff + CI gate [NEXT]** — catch config bloat in review.
-3. Codex TOML + parent-directory discovery.
-4. Per-use accounting (research spike, not a commitment).
+2. **Snapshot + diff + CI gate** — done (`scan --out`, `diff --fail-over/--fail-percent`).
+3. **Codex TOML support [NEXT]**.
+4. Project/parent-directory discovery.
+5. Remote auth diagnostics.
+6. Per-use accounting (research spike, not a commitment).
 
 ## Maintenance
 

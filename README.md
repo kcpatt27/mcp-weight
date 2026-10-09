@@ -75,6 +75,25 @@ alone is 493 tokens).
   scan.
 - Secrets: env/header values are never printed; only keys.
 
+## Snapshot + diff (CI gate)
+
+```bash
+mcp-weight scan --out baseline.json         # commit this once
+mcp-weight scan --out current.json
+mcp-weight diff baseline.json current.json --fail-over 2000   # exit 2 if total grows > 2000 tokens
+```
+
+In a workflow:
+
+```yaml
+- run: npm ci && npm run build
+- run: node dist/src/cli.js scan --config .cursor/mcp.json --out current.json
+- run: node dist/src/cli.js diff baseline.json current.json --fail-over 2000
+```
+
+`--fail-over` is absolute tokens; `--fail-percent` is a percentage. With
+neither flag, `diff` reports and exits 0.
+
 ## Clients scanned
 
 | Client | Config paths |

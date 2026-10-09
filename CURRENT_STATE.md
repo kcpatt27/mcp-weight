@@ -13,8 +13,12 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
   per-server timeout; failed servers are rows, never thrown scans.
 - Token accounting: `cl100k_base` (labeled proxy) + chars/4; `--verbose`
   per-tool breakdown; `--json` report. Secrets never printed.
-- `npm test`: **13/13** (parser shapes, JSONC strip, redaction, tokenizer
-  sanity, fixture stdio end-to-end + error path).
+- `npm test`: **19/19** (parser shapes, JSONC strip, redaction, tokenizer
+  sanity, fixture stdio end-to-end + error path, diff semantics, CLI
+  `scan --out` + `diff --fail-over` integration).
+- Snapshot + diff + CI gate: `scan --out <file>` writes a JSON report;
+  `diff <before> <after> [--fail-over N] [--fail-percent P]` exits 2 when the
+  gate is exceeded.
 - GitHub repository is live with a CI workflow (ubuntu + windows, Node 20/24).
 - Published to npm: **`mcp-weight@0.1.0`** (2026-10-09). The legacy
   `@kcpatt27/memvid-mcp` package now carries its deprecation message on the
@@ -36,6 +40,16 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-09 — Stage 1: snapshot + diff + CI gate
+
+- **Did:** refactored scan orchestration into `src/scan.ts` and config
+  resolution into `src/config/resolve.ts`; added `scan --out <file>` and a
+  `diff` command with `--fail-over` / `--fail-percent` gating (exit 2);
+  added diff + CLI integration tests. `npm test`: 19/19.
+- **Left:** Codex TOML, parent-directory discovery, remote auth diagnostics.
+- **Next:** Codex TOML support.
+- **Evidence:** `npm test` 19/19; README CI snippet; this file.
 
 ### 2026-10-09 — published 0.1.0; legacy package deprecated
 
