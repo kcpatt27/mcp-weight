@@ -1,3 +1,4 @@
+import { parse as parseToml } from "smol-toml";
 import type { ServerSpec, TransportKind } from "../types.js";
 
 /**
@@ -243,4 +244,49 @@ export function parseConfigText(
     if (addAll(mcp)) return { shape: "mcp", specs };
   }
   return { shape: "unknown", specs };
+}
+
+/**
+ * TOML configs (Codex `~/.codex/config.toml`). Same normalization as JSON;
+ * `mcp_servers` is the Codex convention, the others are accepted for parity.
+ */
+export function parseTomlConfig(
+  text: string,
+  sourcePath: string,
+  clientHint = "codex"
+): ParsedConfig {
+  const json = parseToml(text) as unknown;
+  if (!isRecord(json)) throw new Error("config root is not a table");
+  const specs: ServerSpec[] = [];
+
+  const addAll = (container: unknown): boolean => {
+    if (!isRecord(container)) return false;
+    let added = false;
+    for (const [name, raw] of Object.entries(container)) {
+      const spec = normalizeEntry(name, raw, clientHint, sourcePath);
+      if (spec) {
+        specs.push(spec);
+        added = true;
+      }
+    }
+    return added;
+  };
+
+  if (isRecord(json.mcp_servers)) {
+    addAll(json.mcp_servers);
+    return { shape: "toml:mcp_servers", specs };
+  }
+  if (isRecord(json.mcpServers)) {
+    addAll(json.mcpServers);
+    return { shape: "toml:mcpServers", specs };
+  }
+  if (isRecord(json.mcp)) {
+    const mcp = json.mcp;
+    if (isRecord(mcp.servers)) {
+      addAll(mcp.servers);
+      return { shape: "toml:mcp.servers", specs };
+    }
+    if (addAll(mcp)) return { shape: "toml:mcp", specs };
+  }
+  return { shape: "toml:unknown", specs };
 }

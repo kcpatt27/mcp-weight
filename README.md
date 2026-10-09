@@ -103,9 +103,11 @@ neither flag, `diff` reports and exits 0.
 | Claude Desktop | `%APPDATA%\Claude\claude_desktop_config.json` (platform paths) |
 | OpenCode | `~/.config/opencode/opencode.jsonc`, `./opencode.jsonc` |
 | VS Code | `%APPDATA%\Code\User\mcp.json`, `./.vscode/mcp.json` |
-| Any (explicit) | `--config <path>` (shape auto-detected) |
+| Codex | `~/.codex/config.toml`, `./.codex/config.toml` (TOML) |
+| Any (explicit) | `--config <path>` (JSON/JSONC/TOML auto-detected) |
 
-Codex TOML is a Stage 1 item, not supported yet.
+Project configs are discovered from the working directory **up to the git root**;
+user-level configs are always checked.
 
 ## Documentation (reading order)
 

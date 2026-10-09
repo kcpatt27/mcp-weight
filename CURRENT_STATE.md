@@ -13,9 +13,12 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
   per-server timeout; failed servers are rows, never thrown scans.
 - Token accounting: `cl100k_base` (labeled proxy) + chars/4; `--verbose`
   per-tool breakdown; `--json` report. Secrets never printed.
-- `npm test`: **19/19** (parser shapes, JSONC strip, redaction, tokenizer
-  sanity, fixture stdio end-to-end + error path, diff semantics, CLI
-  `scan --out` + `diff --fail-over` integration).
+- Codex TOML configs (`~/.codex/config.toml`) parse into the same normalized
+  specs (stdio + remote).
+- Project configs are discovered from `cwd` up to the git root (nearest first).
+- `npm test`: **23/23** (parser shapes incl. TOML, JSONC strip, redaction,
+  tokenizer sanity, fixture stdio end-to-end + error path, diff semantics, CLI
+  `scan --out` + `diff --fail-over` integration, ancestor discovery).
 - Snapshot + diff + CI gate: `scan --out <file>` writes a JSON report;
   `diff <before> <after> [--fail-over N] [--fail-percent P]` exits 2 when the
   gate is exceeded.
@@ -26,8 +29,6 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 
 **Does not work / not built yet**
 
-- Codex TOML configs (Stage 1).
-- Snapshot/diff/CI gate (Stage 1).
 - Per-use accounting from session logs (Stage 2, research).
 
 **Reproduce**
@@ -40,6 +41,16 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-09 — Stage 1: Codex TOML + ancestor discovery
+
+- **Did:** added TOML parsing (`smol-toml`, ADR-0007) for
+  `~/.codex/config.toml`; project discovery now walks `cwd` → git root,
+  nearest first. Tests 21 → 23.
+- **Left:** remote auth diagnostics.
+- **Next:** remote auth diagnostics.
+- **Evidence:** `tests/toml.test.ts`, `tests/discover-up.test.ts`;
+  `npm test` 23/23.
 
 ### 2026-10-09 — Stage 1: snapshot + diff + CI gate
 

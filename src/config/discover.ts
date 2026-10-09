@@ -50,6 +50,7 @@ export function globalCandidates(): Candidate[] {
 
   list.push({ client: "opencode", path: path.join(xdgConfigDir(), "opencode", "opencode.jsonc") });
   list.push({ client: "opencode", path: path.join(xdgConfigDir(), "opencode", "opencode.json") });
+  list.push({ client: "codex", path: path.join(home, ".codex", "config.toml") });
   return list;
 }
 
@@ -60,13 +61,36 @@ export function projectCandidates(cwd: string): Candidate[] {
     { client: "opencode", path: path.join(cwd, "opencode.jsonc") },
     { client: "opencode", path: path.join(cwd, "opencode.json") },
     { client: "vscode", path: path.join(cwd, ".vscode", "mcp.json") },
+    { client: "codex", path: path.join(cwd, ".codex", "config.toml") },
   ];
+}
+
+/**
+ * Project configs from `cwd` up to the git root (inclusive), nearest first.
+ * Stops after the first ancestor containing `.git`, or at the filesystem root.
+ */
+export function projectCandidatesUp(cwd: string): Candidate[] {
+  const seen = new Set<string>();
+  const out: Candidate[] = [];
+  let dir = path.resolve(cwd);
+  for (let depth = 0; depth < 12; depth++) {
+    for (const c of projectCandidates(dir)) {
+      if (seen.has(c.path)) continue;
+      seen.add(c.path);
+      if (existsSync(c.path)) out.push(c);
+    }
+    if (existsSync(path.join(dir, ".git"))) break;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return out;
 }
 
 export function discoverExisting(cwd: string): Candidate[] {
   const seen = new Set<string>();
   const out: Candidate[] = [];
-  for (const c of [...projectCandidates(cwd), ...globalCandidates()]) {
+  for (const c of [...projectCandidatesUp(cwd), ...globalCandidates()]) {
     if (seen.has(c.path)) continue;
     seen.add(c.path);
     if (existsSync(c.path)) out.push(c);
@@ -82,6 +106,7 @@ export function clientForPath(p: string): string {
   if (norm.includes("claude_desktop_config")) return "claude-desktop";
   if (base === "opencode.jsonc" || base === "opencode.json" || norm.includes("/opencode/"))
     return "opencode";
+  if (base === "config.toml" && norm.includes("/.codex/")) return "codex";
   if (norm.includes("/.vscode/") || (base === "mcp.json" && norm.includes("/code/")))
     return "vscode";
   return "custom";

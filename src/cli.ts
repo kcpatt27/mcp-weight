@@ -199,8 +199,9 @@ Diff options:
   --help, -h             Show this help
   --version              Show version
 
-With no --config, scans discovered project + user configs for Cursor,
-Claude Code, Claude Desktop, OpenCode, VS Code, and Codex.
+With no --config, scans project configs from cwd up to the git root, plus
+user configs, for Cursor, Claude Code, Claude Desktop, OpenCode, VS Code,
+and Codex.
 
 Exit codes: 0 ok · 1 error/no configs · 2 usage or gate failure.
 

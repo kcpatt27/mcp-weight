@@ -147,3 +147,33 @@ fallback is `mcp-token-cost`.
 
 - Docs, package name, and bin all use `mcp-weight`.
 - A rename is a mechanical change plus a new ADR.
+
+---
+
+## ADR-0007: `smol-toml` for Codex TOML configs
+
+- **Status:** accepted (2026-10-09)
+- **Related:** `package.json`, `src/config/parse.ts`, `ROADMAP.md` Stage 1
+
+### Context
+
+Codex stores MCP servers in `~/.codex/config.toml` (`[mcp_servers.<name>]`),
+and no standard-library TOML parser exists in Node. Hand-rolling TOML would be
+error-prone for one client.
+
+### Decision
+
+Add `smol-toml` (ESM, typed, ~1 small package) as a runtime dependency and use
+`parseTomlConfig` for `.toml` inputs. JSON/JSONC files keep `parseConfigText`.
+Both normalize to the same `ServerSpec`.
+
+### Alternatives
+
+- `@iarna/toml` — mature but heavier and CommonJS-first.
+- Hand-rolled subset parser — rejected: correctness risk for a supported client.
+- Skip Codex — rejected: it is now a mainstream MCP client.
+
+### Consequences
+
+- One new runtime dependency (pinned in `package.json`).
+- `--config <file>.toml` works for any TOML-shaped config, not just Codex.

@@ -19,8 +19,9 @@ config paths   →   client shapes → ServerSpec  →  SDK client connects  →
 ```
 
 1. **discover** (`src/config/discover.ts`) — candidate paths for the five
-   supported clients plus project-local paths in `cwd`; explicit `--config`
-   paths are added verbatim. Only existing files are returned.
+   supported clients plus project-local paths in `cwd` and its ancestors up to
+   the git root; explicit `--config` paths are added verbatim. Only existing
+   files are returned.
 2. **parse / normalize** (`src/config/parse.ts`) — JSONC stripper (comments and
    trailing commas, string-aware), shape detection (`mcpServers`, `servers`,
    `mcp.servers`, `mcp`), entry normalization to `ServerSpec`, disabled entries
@@ -52,7 +53,7 @@ config paths   →   client shapes → ServerSpec  →  SDK client connects  →
 | Report formatting | `src/report.ts` | built |
 | CLI | `src/cli.ts` | built |
 | Serial per-use accounting | — | **not built** (Stage 2 research) |
-| Codex TOML parsing | — | **not built** (Stage 1) |
+| Codex TOML parsing | `src/config/parse.ts` (`parseTomlConfig`) | built (smol-toml) |
 | MCP server wrapper | — | **not built by design** (ADR-0002) |
 
 ## The observer effect
