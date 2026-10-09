@@ -18,10 +18,10 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - Project configs are discovered from `cwd` up to the git root (nearest first).
 - Remote (HTTP) probes try Streamable HTTP then legacy SSE; failures carry an
   actionable hint (auth / not-found / connection / timeout / protocol).
-- `npm test`: **25/25** (parser shapes incl. TOML, JSONC strip, redaction,
+- `npm test`: **36/36** (parser shapes incl. TOML, JSONC strip, redaction,
   tokenizer sanity, fixture stdio end-to-end + error path, diff semantics, CLI
   `scan --out` + `diff --fail-over` integration, ancestor discovery, HTTP 401
-  hint path).
+  hint path, usage parser + CLI dispatch).
 - Snapshot + diff + CI gate: `scan --out <file>` writes a JSON report;
   `diff <before> <after> [--fail-over N] [--fail-percent P]` exits 2 when the
   gate is exceeded.
@@ -35,8 +35,8 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - `mcp-weight usage <transcript.jsonl>` parses a Claude Code-style JSONL transcript and reports per-tool call counts.
 - `--scan-report <path>` enriches each row with schema-token weight from a scan report JSON.
 - Unknown transcript shapes produce error entries and are skipped (never thrown).
-- `npm test` includes 7 fixture-driven transcript tests.
-- Docs: `docs/USAGE-TRANSCRIPT-FORMAT.md`.
+- `npm test` includes 11 fixture-driven transcript tests.
+- Docs: `docs/USAGE-TRANSCRIPT-FORMAT.md`; audit: `docs/AUDIT-usage.md`.
 
 **Does not work / not built yet**
 
@@ -52,6 +52,21 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-09 — independent audit of the usage tracer bullet
+
+- **Did:** audited `usage` against code, tests, fixture, CLI wiring, and docs.
+  Found and fixed two real defects — (F1) `usage` was never dispatched as a
+  command, so `mcp-weight usage …` ran a **scan**; (F2) error line numbers
+  ignored blank lines. Fixed the `mcp-weight ?` header (F3), aligned the
+  format doc/README with actual silent-skip behavior and omitted-vs-null
+  `tokens` (F4), and reused the shared report validator (F5). Added 4
+  regression tests. `scan`/`diff` and all JSON schemas unchanged.
+  Findings: `docs/AUDIT-usage.md`.
+- **Left:** full Claude Code native session-log parser; per-session/turn
+  aggregation.
+- **Next:** expand the transcript parser to Claude Code's native format.
+- **Evidence:** `docs/AUDIT-usage.md`; `npm test` 32 → 36.
 
 ### 2026-10-09 — Stage 1: remote auth diagnostics (Stage 1 complete)
 

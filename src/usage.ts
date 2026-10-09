@@ -56,13 +56,14 @@ export function parseTranscript(
   text: string,
   opts: UsageOptions = {}
 ): UsageReport {
-  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  const lines = text.split("\n");
   const errors: string[] = [];
   const callCounts = new Map<string, number>();
   let totalCalls = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] as string;
+    if (line.trim().length === 0) continue;
     let entry: TranscriptEntry;
     try {
       const parsed = JSON.parse(line);
