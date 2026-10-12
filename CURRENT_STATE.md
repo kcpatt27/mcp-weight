@@ -45,9 +45,6 @@ Live snapshot, not a stable map (that is `PROJECT_CONTEXT.md`) and not the plan
 - Per-session/per-turn aggregation and cross-file dedupe.
 - `claude-code` dialect support is modeled on the documented Anthropic shape; it
   has not been validated against a captured Claude Code log.
-- Folder rename `mcp-diet` → `mcp-weight` is deferred: the running OpenCode
-  service holds the directory. Run `Rename-Item` with OpenCode closed, then
-  update `control-plane/project-registry.yaml`.
 
 **Reproduce**
 
@@ -59,6 +56,15 @@ node dist/src/cli.js scan --verbose
 ```
 
 ## Session ledger
+
+### 2026-10-12 — folder rename completed
+
+- **Did:** renamed the local folder `mcp-diet` → `mcp-weight` (done with
+  OpenCode closed) and updated `control-plane/project-registry.yaml` to the new
+  path. Docs-only; no code changes.
+- **Left:** enable the npm trusted publisher on npmjs.com.
+- **Next:** releases are `npm version … && git push --follow-tags`.
+- **Evidence:** session working directory is `.../personal-projects/mcp-weight`.
 
 ### 2026-10-09 — Claude Code dialect, trusted publishing, release 0.2.0
 
