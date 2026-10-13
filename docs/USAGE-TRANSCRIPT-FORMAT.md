@@ -90,7 +90,7 @@ Captured with the shipped `simple` fixture and a scan report whose server
 exposes `Bash: 120`, `Read: 85`, `Glob: 60` tokens:
 
 ```
-mcp-weight 0.2.0 — usage report
+mcp-weight - usage report
 Transcript: transcript.jsonl
 Format: simple · Scanned: 2026-10-09T00:00:00.000Z · 6 call(s) across 3 tool(s)
 
