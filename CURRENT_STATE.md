@@ -57,6 +57,17 @@ node dist/src/cli.js scan --verbose
 
 ## Session ledger
 
+### 2026-10-13 — first-week traction (0.2.0)
+
+- **Did:** recorded npm traction — **458 downloads** in the package's first week
+  (npm downloads API: last-week == last-month == 458, 2026-10-05 → 2026-10-11, so
+  the whole lifetime so far). Operator set up the npm **Trusted Publisher**
+  (GitHub Actions, `release.yml`, allow `npm publish`) → future releases are
+  `npm version … && git push --follow-tags`.
+- **Left:** none blocking.
+- **Evidence:** `api.npmjs.org/downloads/point/last-week/mcp-weight` → 458;
+  npm package → Settings → Trusted Publisher.
+
 ### 2026-10-12 — folder rename completed
 
 - **Did:** renamed the local folder `mcp-diet` → `mcp-weight` (done with
