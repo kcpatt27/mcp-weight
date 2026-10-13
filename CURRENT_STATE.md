@@ -60,13 +60,15 @@ node dist/src/cli.js scan --verbose
 ### 2026-10-13 — first-week traction (0.2.0)
 
 - **Did:** recorded npm traction — **458 downloads** in the package's first week
-  (npm downloads API: last-week == last-month == 458, 2026-10-05 → 2026-10-11, so
-  the whole lifetime so far). Operator set up the npm **Trusted Publisher**
-  (GitHub Actions, `release.yml`, allow `npm publish`) → future releases are
-  `npm version … && git push --follow-tags`.
-- **Left:** none blocking.
-- **Evidence:** `api.npmjs.org/downloads/point/last-week/mcp-weight` → 458;
-  npm package → Settings → Trusted Publisher.
+  (npm downloads API: last-week == last-month == 458, 2026-10-05 → 2026-10-11).
+  Enabled the npm **Trusted Publisher** (GitHub Actions, `release.yml`, allow
+  `npm publish`) and **verified it end to end**: tag `v0.2.1` → release workflow
+  succeeded (`+ mcp-weight@0.2.1`) → **`0.2.1` live on npm with a provenance
+  attestation**. Fixed version drift too (README sample; the MCP client now reads
+  its version from `package.json` instead of a hardcoded `0.1.0`).
+- **Left:** none blocking. Future releases: `npm version … && git push --follow-tags`.
+- **Evidence:** downloads API → 458; Actions run `38389002359` release success;
+  `registry.npmjs.org/mcp-weight/latest` → `0.2.1` (+ `dist.attestations`).
 
 ### 2026-10-12 — folder rename completed
 
