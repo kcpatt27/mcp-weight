@@ -1,6 +1,6 @@
 {
   "name": "mcp-weight",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Weigh your MCP stack: how many context tokens each configured MCP server's tool schemas cost, across clients and configs.",
   "type": "module",
   "license": "MIT",
