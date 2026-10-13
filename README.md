@@ -46,7 +46,7 @@ Example report (a real scan on the author's machine: one Cursor config, one
 OpenCode config; `perplexica-local` was down — exactly the partial-result path):
 
 ```text
-mcp-weight 0.2.0 — MCP context weight report
+mcp-weight 0.2.2 — MCP context weight report
 Tokenizer: cl100k_base (proxy tokenizer: comparable across servers, not provider-native (up to ~15% off))
 Scanned: 2026-10-05T20:36:29.374Z · window basis: 200,000 tokens
 
