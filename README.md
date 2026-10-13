@@ -42,11 +42,11 @@ npx mcp-weight scan --config ~/.cursor/mcp.json --config ./opencode.jsonc
 
 ## What a report looks like
 
-Captured on the author's machine, 2026-10-05 (one Cursor config, one OpenCode
-config; `perplexica-local` was down, which is exactly the partial-result path):
+Example report (a real scan on the author's machine: one Cursor config, one
+OpenCode config; `perplexica-local` was down — exactly the partial-result path):
 
 ```text
-mcp-weight 0.1.0 — MCP context weight report
+mcp-weight 0.2.0 — MCP context weight report
 Tokenizer: cl100k_base (proxy tokenizer: comparable across servers, not provider-native (up to ~15% off))
 Scanned: 2026-10-05T20:36:29.374Z · window basis: 200,000 tokens
 

@@ -1,8 +1,16 @@
+import { readFileSync } from "node:fs";
+
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { ProbeResult, RawTool, ServerSpec } from "../types.js";
+
+// Repo/package root is three levels up from dist/src/mcp/ — also true when
+// installed, since npm always packs package.json alongside dist/.
+const CLIENT_VERSION = (JSON.parse(
+  readFileSync(new URL("../../../package.json", import.meta.url), "utf-8"),
+) as { version: string }).version;
 
 type ClientTransport = Parameters<Client["connect"]>[0];
 
@@ -110,7 +118,7 @@ function requestInit(spec: ServerSpec): RequestInit | undefined {
 }
 
 async function probeStdio(spec: ServerSpec, timeoutMs: number): Promise<ProbeResult> {
-  const client = new Client({ name: "mcp-weight", version: "0.1.0" });
+  const client = new Client({ name: "mcp-weight", version: CLIENT_VERSION });
   try {
     const { tools, serverVersion } = await runClient(client, stdioTransport(spec), timeoutMs);
     return { status: "ok", tools, serverVersion };
@@ -130,7 +138,7 @@ async function probeHttp(spec: ServerSpec, timeoutMs: number): Promise<ProbeResu
   ];
   let lastError: unknown;
   for (const build of attempts) {
-    const client = new Client({ name: "mcp-weight", version: "0.1.0" });
+    const client = new Client({ name: "mcp-weight", version: CLIENT_VERSION });
     try {
       const { tools, serverVersion } = await runClient(client, build(), timeoutMs);
       return { status: "ok", tools, serverVersion };
